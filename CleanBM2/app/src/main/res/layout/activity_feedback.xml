@@ -1,0 +1,262 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:widget="http://schemas.android.com/apk/res-auto"
+    android:orientation="vertical"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#F2F2F2">
+
+    <include
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        layout="@layout/title_bar" />
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:scrollbars="none"
+>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:padding="10sp"
+            >
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="10dp"
+                android:layout_marginTop="20dp"
+                android:gravity="center_horizontal|center"
+                android:layout_marginLeft="20sp"
+                android:layout_marginRight="20sp"
+                android:orientation="vertical" >
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/add_comment"
+                    android:clickable="true"
+                    android:gravity="center"
+                    android:textColor="@color/dark_blue"
+                    style="@style/txt_menu"
+                    android:textSize="22sp"
+                     />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:layout_gravity="center_horizontal"
+                android:layout_marginLeft="20sp"
+                android:layout_marginRight="20sp"
+                android:layout_marginBottom="5dp"
+                android:layout_marginTop="10sp"
+                android:orientation="horizontal" >
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/add_location_title1"
+                    android:clickable="true"
+                    android:textColor="@color/black"
+                    style="@style/txt_menu"
+                    android:id="@+id/txt_add_Location" />
+            </LinearLayout>
+
+            <RatingBar
+                android:id="@+id/ratingBathRoom"
+                android:layout_width="wrap_content"
+                android:layout_height="50sp"
+                android:layout_gravity="center_horizontal"
+                android:layout_marginTop="20dp"
+                android:progressDrawable="@drawable/custom_rating_bar"
+                android:numStars="5"
+                style="@style/rating_bar"
+                android:stepSize="0.5"
+                />
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1sp"
+                android:layout_marginTop="20sp"
+                android:layout_marginLeft="20sp"
+                android:layout_marginRight="20sp"
+                android:background="@drawable/detail_line"
+                />
+
+            <LinearLayout
+                android:orientation="horizontal"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="30sp"
+                android:layout_marginLeft="20sp"
+                android:layout_marginRight="20sp"
+
+                >
+                <RadioGroup
+                    android:id="@+id/radioGroup"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical|center"
+                    >
+                    <RadioButton
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:background="@drawable/custom_radio_ad_location"
+                        android:button="@android:color/transparent"
+                        android:checked="true"
+                        android:id="@+id/radio_Squat" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Squat"
+                        android:layout_marginLeft="10sp"
+                        android:clickable="true"
+                        android:textColor="@color/black"
+                        style="@style/txt_menu"
+                        />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="or"
+                        android:layout_marginLeft="20sp"
+                        android:layout_marginRight="20sp"
+                        android:clickable="true"
+                        android:textColor="@color/dark_blue"
+                        android:textStyle="bold"
+                        style="@style/txt_menu"
+                        />
+
+                    <RadioButton
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:background="@drawable/custom_radio_ad_location"
+                        android:button="@android:color/transparent"
+                        android:id="@+id/radio_Sit" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Sit"
+                        android:layout_marginLeft="10sp"
+                        android:clickable="true"
+                        android:textColor="@color/black"
+                        style="@style/txt_menu"
+                        />
+                </RadioGroup>
+
+            </LinearLayout>
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1sp"
+                android:layout_marginTop="30sp"
+                android:layout_marginLeft="20sp"
+                android:layout_marginRight="20sp"
+                android:background="@drawable/detail_line"
+                />
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:layout_gravity="center_horizontal"
+                android:layout_marginLeft="20sp"
+                android:layout_marginRight="20sp"
+                android:layout_marginBottom="5dp"
+                android:layout_marginTop="30sp"
+                android:orientation="horizontal" >
+
+
+                <EditText
+                    android:layout_width="fill_parent"
+                    android:layout_height="wrap_content"
+                    style="@style/edit_text_login"
+                    android:hint="Your Review"
+                    android:padding="15sp"
+                    android:inputType="textPersonName"
+                    android:id="@+id/edtReviewMsg" />
+
+            </LinearLayout>
+
+            <FrameLayout
+                android:id="@+id/Image_Upload"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal"
+                android:layout_marginBottom="5dp"
+                android:layout_marginLeft="20sp"
+                android:layout_marginRight="20sp"
+                android:gravity="center_vertical"
+                android:orientation="vertical">
+
+
+                <LinearLayout
+                    android:id="@+id/layout_imageCLick"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/add_location_profile_pic_border"
+                    android:gravity="center_vertical|center"
+                    android:orientation="vertical">
+
+                    <ImageView
+                        android:id="@+id/image_photo"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:src="@drawable/add_photo_icon" />
+
+                    <TextView
+                        android:id="@+id/add_a_photo_txt"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="5sp"
+                        android:clickable="true"
+                        android:text="Add a photo"
+                        android:textColor="@color/dark_blue"
+                        android:textSize="12sp" />
+                </LinearLayout>
+            </FrameLayout>
+
+            <com.widgets.HorizontalListView
+                android:id="@+id/hrzListView"
+                android:layout_width="match_parent"
+                android:layout_height="151dp"
+                android:divider="#878787"
+                widget:dividerWidth="2dp" />
+
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical|center"
+                android:layout_gravity="center_vertical|bottom"
+                android:orientation="vertical"
+                android:layout_marginTop="20sp"
+                android:layout_marginBottom="30sp"
+                >
+                <TextView
+                    android:id="@+id/txt_GiveReview"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:clickable="true"
+                    android:paddingBottom="5sp"
+                    android:gravity="center_vertical|center"
+                    style="@style/button_txtstyle"
+                    android:background="@drawable/login_box"
+                    android:text="Submit Your Review"
+                    />
+            </LinearLayout>
+
+
+
+        </LinearLayout>
+    </ScrollView>
+
+</LinearLayout>

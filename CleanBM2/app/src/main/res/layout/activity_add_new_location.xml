@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
+    <include
+        layout="@layout/title_bar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" />
+
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:orientation="vertical">
+
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+            <fragment
+                android:id="@+id/map"
+                class="com.google.android.gms.maps.SupportMapFragment"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent" />
+
+            <ImageView
+                android:id="@+id/img_add_new_location"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center|center_vertical"
+                android:src="@drawable/current_location_icon" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_vertical|bottom"
+                android:layout_marginBottom="60sp"
+                android:layout_marginLeft="65sp"
+                android:layout_marginRight="65sp"
+                android:gravity="center_vertical|center"
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/txtAddLocation"
+                    style="@style/button_txtstyle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/login_box"
+                    android:clickable="true"
+                    android:drawableLeft="@drawable/add_bathroom_icon"
+                    android:gravity="center_vertical|center"
+                    android:paddingBottom="5sp"
+                    android:paddingLeft="20sp"
+                    android:text="Add This Location" />
+            </LinearLayout>
+
+        </FrameLayout>
+
+    </LinearLayout>
+
+
+</LinearLayout>

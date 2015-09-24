@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
+    <include
+        layout="@layout/title_bar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" />
+
+    <LinearLayout
+        android:id="@+id/StatusBar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+
+        <com.widgets.CustomAutoCompleteTextView
+            android:id="@+id/edtSearchLocation"
+            style="@style/edit_text_login"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:drawableLeft="@drawable/search_location_icon"
+            android:drawablePadding="20sp"
+            android:hint="Location"
+            android:inputType="textPersonName"
+            android:paddingLeft="20sp"
+            android:paddingRight="20sp" />
+
+
+    </LinearLayout>
+
+    <View
+        android:layout_width="fill_parent"
+        android:layout_height="1dp"
+        android:background="@color/light_gray" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:orientation="vertical">
+
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+            <fragment
+                android:id="@+id/map"
+                class="com.google.android.gms.maps.SupportMapFragment"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent" />
+            <!--  <LinearLayout
+                  android:layout_width="match_parent"
+                  android:layout_height="wrap_content"
+                  android:gravity="center_vertical|center"
+                  android:layout_gravity="center_vertical|bottom"
+                  android:orientation="vertical"
+                  android:layout_marginBottom="60sp"
+                  >
+              <TextView
+                  android:id="@+id/txtAddLocation"
+                  android:layout_width="wrap_content"
+                  android:layout_height="wrap_content"
+                  android:clickable="true"
+                  android:paddingBottom="5sp"
+                  android:gravity="center_vertical|center"
+                  style="@style/button_txtstyle"
+                  android:background="@drawable/login_box"
+                    android:paddingLeft="20sp"
+                  android:drawableLeft="@drawable/add_bathroom_icon"
+                  android:text="Add This Location"
+                  />
+              </LinearLayout>-->
+
+        </FrameLayout>
+
+    </LinearLayout>
+
+
+</LinearLayout>
