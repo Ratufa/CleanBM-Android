@@ -191,10 +191,11 @@ public class SearchLocationActivity extends FragmentActivity { //implements Load
                 String url = GooglePlaces.getPlaceDetailsUrl(SearchLocationActivity.this, suggestionsList.get(position).getReference());
 
                 Log.d(TAG, "Detail URL :" + url);
-
+              //  Utils.setProgress(SearchLocationActivity.this,true);
                 // Start downloading Google Place Details
                 // This causes to execute doInBackground() of DownloadTask class
                 placeDetailsDownloadTask.execute(url);
+              //  Utils.setProgress(SearchLocationActivity.this,false);
             }
         });
         txtLookUpThisLocation = (TextView) findViewById(R.id.txtLookUpThisLocation);
@@ -417,8 +418,6 @@ public class SearchLocationActivity extends FragmentActivity { //implements Load
         }
 
     }
-
-
 
     @Override
     public boolean onTouchEvent(MotionEvent event) {

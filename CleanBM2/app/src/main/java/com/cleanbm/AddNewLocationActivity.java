@@ -43,35 +43,33 @@ import java.util.List;
 
 /**
  * Created by Ratufa.Paridhi on 8/19/2015.
+ *  Setting the location on the google map where you want to add location of bathroom
+ *  and click on Add this location Button
  */
-public class AddNewLocationActivity extends FragmentActivity { //implements LocationListener
+public class AddNewLocationActivity extends FragmentActivity {
     TextView add_this_location, txt_Titlebar;
     PopupWindow popupWindow;
     double lat, longg;
     String full_address = "";
     private GoogleMap mMap;
-    private ImageView img_Menu, img_Cancel, img_navigation_icon;
+    private ImageView img_Menu, img_navigation_icon;
     PopupMenuAdapter adapter;
     private AlertDialogManager alert = new AlertDialogManager();
+
     View.OnClickListener mMenuButtonClickListener = new View.OnClickListener() {
         @Override
         public void onClick(View v) {
+                /*
+                    On Back icon click listener
+                */
             if (v == img_navigation_icon) {
-                /*img_Menu.setVisibility(View.GONE);
-                img_Cancel.setVisibility(View.VISIBLE);
-                // show the list view as dropdown
-                popupWindow.showAsDropDown(v, -5, 0);*/
-                // Intent in = new Intent(getApplicationContext(),DashBoardActivity.class);
-                //  startActivity(in);
                 onBackPressed();
-
             }
-          /*  else if(v == img_Cancel)
-            {
-                //  Toast.makeText(getApplicationContext(),"Cancel",Toast.LENGTH_SHORT).show();
-                img_Menu.setVisibility(View.VISIBLE);
-                img_Cancel.setVisibility(View.GONE);
-            }*/
+            /*
+                User click on Add this location button
+                Setting the location by moving google map and get the lat and long
+                and also fetch the Address from the lat and lng
+            */
             else if (v == add_this_location) {
 
                 // Get the middle lat and long on the map view
@@ -82,33 +80,27 @@ public class AddNewLocationActivity extends FragmentActivity { //implements Loca
 
                 Log.e("Tag", latLng.latitude + " " + latLng.longitude);
                 lat = latLng.latitude;
+                // Set the lat and lng with 6 decimal place
                 lat=Double.valueOf(String.format("%.6f", lat));
                 longg = latLng.longitude;
                 longg =  Double.valueOf(String.format("%.6f", longg));
 
-                // Get current user
-                ParseUser currentUser = ParseUser.getCurrentUser();
-
-                if (currentUser == null) {
-                    // It's an anonymous user, hence show the login screen
-                    alert.showAlertDialog(AddNewLocationActivity.this, getResources().getString(R.string.login_first_message));
-                } else {
-                    // The user is logged in, yay!!
-                    Log.i("AddNewLocationActivity", currentUser.getUsername() + " " + currentUser.getObjectId());
-                    if (TextUtils.isNullOrEmpty(full_address)) {
+                if (TextUtils.isNullOrEmpty(full_address)) {
                         Toast.makeText(getApplicationContext(), "You cannot add this location.", Toast.LENGTH_SHORT).show();
                     } else {
+                    /*
+                        WHen user set the marker on the google map, it pass the lat and long
+                        and addess with intent.
+                    */
                         Intent intent = new Intent(getApplicationContext(), AddLocation.class);
                         Bundle bundle = new Bundle();
                         bundle.putDouble("Latitude", lat);
                         bundle.putDouble("Longitude", longg);
                         bundle.putString("Address", full_address);
                         intent.putExtras(bundle);
-                        //startActivity(intent);
-                        Log.d("Add location lat and longg"," "+lat+" "+longg);
                         startActivityForResult(intent,111, bundle);
                     }
-                }
+
             }
         }
     };
@@ -126,44 +118,52 @@ public class AddNewLocationActivity extends FragmentActivity { //implements Loca
 
         // initialize pop up window
         popupWindow = showMenu();
+        // On Dismiss pop up, icon get changed.
         popupWindow.setOnDismissListener(new PopupWindow.OnDismissListener() {
             @Override
             public void onDismiss() {
                 img_Menu.setImageResource(R.drawable.menu_icon);
             }
         });
+         /*
+            Home icon get changed to Back icon and set the on click listener
+            on the back icon.
+        */
         img_navigation_icon = (ImageView) findViewById(R.id.img_navigation_icon);
         img_navigation_icon.setImageResource(R.drawable.back_icon);
         img_navigation_icon.setVisibility(View.VISIBLE);
         img_navigation_icon.setOnClickListener(mMenuButtonClickListener);
+         /*
+            Setting the action bar title.
+        */
         txt_Titlebar = (TextView) findViewById(R.id.txt_Titlebar);
         txt_Titlebar.setText("Add New Location");
-        img_Menu = (ImageView) findViewById(R.id.navigation_icon);
-        img_Menu.setVisibility(View.GONE);
-        add_this_location = (TextView) findViewById(R.id.txtAddLocation);
-        add_this_location.setOnClickListener(mMenuButtonClickListener);
-
+        /*
+            Navigation (menu icon) visiblity on and set the on click listener on menu.
+       */
         img_Menu =(ImageView)findViewById(R.id.navigation_icon);
         img_Menu.setVisibility(View.VISIBLE);
         img_Menu.setOnClickListener(mNavigationClickListener);
 
-/*        img_Cancel = (ImageView)findViewById(R.id.cancel_icon);
-        // img_Cancel.setVisibility(View.GONE);
-        img_Cancel.setOnClickListener(mMenuButtonClickListener);*/
+        add_this_location = (TextView) findViewById(R.id.txtAddLocation);
+        add_this_location.setOnClickListener(mMenuButtonClickListener);
 
+        // Setting up the map
         setUpMapIfNeeded();
 
     }
 
+    /*
+        On menu button click, Popup window will be open up
+        and also changes the icon.
+    */
     View.OnClickListener mNavigationClickListener = new View.OnClickListener() {
         @Override
         public void onClick(View v) {
             v.setActivated(!v.isActivated());
             if (popupWindow.isFocusable()) {
-//                isClick = false;
                 img_Menu.setImageResource(R.drawable.cancel_icon);
             } else {
-//                isClick = true;
                 img_Menu.setImageResource(R.drawable.menu_icon);
             }
             popupWindow.showAsDropDown(v, -5, 0);
@@ -172,17 +172,25 @@ public class AddNewLocationActivity extends FragmentActivity { //implements Loca
         }
     };
 
+    /*
+       Showing the pop up menu.
+
+    */
     public PopupWindow showMenu() {
         //Initialize a pop up window type
-        LayoutInflater inflater = (LayoutInflater) AddNewLocationActivity.this.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
         LinearLayout layoutt = new LinearLayout(this);
         PopupWindow popupWindow = new PopupWindow(layoutt, LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT, true);
 
         ParseUser currentUser = ParseUser.getCurrentUser();
-        Popup_Menu_Item menus[] = new Popup_Menu_Item[5];
+        Popup_Menu_Item menus[];
+        // Getting the Emailverified value from the parse to check whether User email is verified or not
         Boolean email_verify = currentUser.getBoolean("emailVerified");
         Log.d("Splash screen "," "+email_verify);
-        if (currentUser.getUsername() != null && email_verify==true){
+        /*
+            If User is verify and successfully login
+            then If block will be run and showing "Logout" option.
+        */
+        if (currentUser.getUsername() != null && email_verify==true) {
             menus = new Popup_Menu_Item[]{
                     new Popup_Menu_Item(R.drawable.home_icon, getResources().getString(R.string.Home)),
                     new Popup_Menu_Item(R.drawable.location_icon, getResources().getString(R.string.search_near_me)),
@@ -193,6 +201,10 @@ public class AddNewLocationActivity extends FragmentActivity { //implements Loca
                     new Popup_Menu_Item(R.drawable.sign_out_button, getResources().getString(R.string.Logout)),
             };
         } else {
+         /*
+            If User is not verify
+            then else block will be run and showing "Sign Up" option.
+         */
             menus = new Popup_Menu_Item[]{
                     new Popup_Menu_Item(R.drawable.home_icon, getResources().getString(R.string.Home)),
                     new Popup_Menu_Item(R.drawable.location_icon, getResources().getString(R.string.search_near_me)),
@@ -203,19 +215,15 @@ public class AddNewLocationActivity extends FragmentActivity { //implements Loca
             };
         }
 
-        Log.e("Array size", menus.length + " ");
+        // Setting the popup Menu list in the adapter
         adapter = new PopupMenuAdapter(AddNewLocationActivity.this, R.layout.popup_menu_item, menus);
-        Log.e("After adapter", menus.length + " ");
         //the drop down list in a listview
         ListView lstMenu = new ListView(AddNewLocationActivity.this);
-        //ListView lstMenu= (ListView)findViewById(R.id.listView1);
-        // lstMenu.setVisibility(View.VISIBLE);
-
         // set our adapter and pass our pop up window content
         lstMenu.setAdapter(adapter);
         // adapter.notifyDataSetChanged();
         lstMenu.setDivider(getResources().getDrawable(R.drawable.menu_line));
-        // lstMenu.setCacheColorHint(Color.TRANSPARENT);
+        // Setting the alpha on list
         lstMenu.setAlpha(.93f);
 
         Animation fadeInAnimation = AnimationUtils.loadAnimation(getApplicationContext(), android.R.anim.fade_in);
@@ -229,22 +237,17 @@ public class AddNewLocationActivity extends FragmentActivity { //implements Loca
         popupWindow.setFocusable(true);
         popupWindow.setBackgroundDrawable(new BitmapDrawable());
 
-        // popupWindow.setWidth(width);
-        //  popupWindow.setHeight(WindowManager.LayoutParams.WRAP_CONTENT);
-
         // set the list view as pop up window content
         popupWindow.setContentView(lstMenu);
         return popupWindow;
     }
 
-
+    /*
+           WHen we click on the Pop up menu list item then, this listener will be called
+       */
     public class DropdownOnItemClickListener implements AdapterView.OnItemClickListener {
-
-        String TAG = "AddNewLocationActivity.java";
-
         @Override
         public void onItemClick(AdapterView<?> parent, View v, int position, long arg3) {
-
             // get the context and main activity to access variables
             Context mContext = v.getContext();
             AddNewLocationActivity mainActivity = ((AddNewLocationActivity) mContext);
@@ -259,40 +262,41 @@ public class AddNewLocationActivity extends FragmentActivity { //implements Loca
             // dismiss the pop up
             mainActivity.popupWindow.dismiss();
 
-            Popup_Menu_Item popup_menu_item = new Popup_Menu_Item();
-            // String data=popup_menu_item.title;
-            // String data=parent.getItemAtPosition(position).toString();
-
             Popup_Menu_Item info = (Popup_Menu_Item) parent.getItemAtPosition(position);
             String data = info.title;
 
-            Log.e("Tag", data);
             if (data.equals(getString(R.string.Home))) {
+                // Click on Home menu, it finish the current activity
                 finish();
             } else if (data.equals(getString(R.string.search_near_me))) {
+                // Click on Search Near me menu, It intent to the DashBoardActivity
+                // Showing nearest bathroom and hotel/restaurant
                 if (Utils.isInternetConnected(AddNewLocationActivity.this)) {
                     Intent intent = new Intent(getApplicationContext(), DashBoardActivity.class);
                     startActivity(intent);
                     finish();
                 } else {
+                    // If internet is not present.
                     alert.showAlertDialog(AddNewLocationActivity.this, getResources().getString(R.string.connection_not_available));
                 }
 
             } else if (data.equals(getString(R.string.search_location))) {
-                Intent intent = new Intent(getApplicationContext(), AddNewLocationActivity.class);
-                //  startActivityForResult(intent, 101);
+                // Click on Search Location
+                Intent intent = new Intent(getApplicationContext(), SearchAdvanceActivity.class);
                 startActivity(intent);
                 finish();
             } else if (data.equals(getString(R.string.add_new_location))) {
+                // Click on Add new Location menu
                 Intent intent = new Intent(getApplicationContext(), AddNewLocationActivity.class);
-                //   startActivity(intent);
                 startActivityForResult(intent, 777);
                 finish();
             } else if (data.equals(getString(R.string.support))) {
+                // Support Menu
                 Intent intent = new Intent(getApplicationContext(), SupportActivity.class);
                 startActivity(intent);
                 finish();
             } else if (data.equals(getString(R.string.my_account))) {
+                // My Account Menu
                 Intent intent = new Intent(getApplicationContext(), MyAccountActivity.class);
                 startActivity(intent);
                 finish();
@@ -349,6 +353,12 @@ public class AddNewLocationActivity extends FragmentActivity { //implements Loca
         finish();
     }
 
+    /*
+        set up the Map id
+        Get the current lat and lng from the shared preference
+        Animate the camera to the current lat lng
+        on setting camera get the latlgn and convert the latlng to Address using ReverseGeocodingTask
+    */
     private void setUpMapIfNeeded() {
         // Do a null check to confirm that we have not already instantiated the map.
         if (mMap == null) {
@@ -358,23 +368,12 @@ public class AddNewLocationActivity extends FragmentActivity { //implements Loca
             if (Utils.isInternetConnected(AddNewLocationActivity.this)) {
                 latitude = Utils.getPref(getApplicationContext(), Constants.USER_LATITUDE, "0.0");
                 longitude = Utils.getPref(getApplicationContext(), Constants.USER_LONGITUDE, "0.0");
-                double Gps_lat = ((double) Double.parseDouble(latitude));
-                double Gps_lon = ((double) Double.parseDouble(longitude));
+                double Gps_lat = (Double.parseDouble(latitude));
+                double Gps_lon = (Double.parseDouble(longitude));
                 CameraPosition cameraPosition = new CameraPosition.Builder().target(new LatLng(Gps_lat, Gps_lon)).zoom(16).build();
                 mMap.animateCamera(CameraUpdateFactory.newCameraPosition(cameraPosition));
                 mMap.setMyLocationEnabled(false);
                 mMap.getUiSettings().setZoomControlsEnabled(true);
-
-                /*mMap.setOnMapLoadedCallback(new GoogleMap.OnMapLoadedCallback() {
-                    @Override
-                    public void onMapLoaded() {
-                        VisibleRegion visibleRegion = mMap.getProjection()
-                                .getVisibleRegion();
-                        LatLngBounds bounds1 = visibleRegion.latLngBounds;
-                        LatLng latLng = bounds1.getCenter();
-                        Log.e("Tag", latLng.latitude + " " + latLng.longitude);
-                    }
-                });*/
 
                 mMap.setOnCameraChangeListener(new GoogleMap.OnCameraChangeListener() {
                     @Override
@@ -396,24 +395,13 @@ public class AddNewLocationActivity extends FragmentActivity { //implements Loca
         super.onActivityResult(requestCode, resultCode, data);
         if (requestCode == 111) {
             if (data != null) {
-              /*  String myValue = data.getStringExtra("Latitude_added");
-                String myValue1 = data.getStringExtra("Longitude_added");
-                Log.d("Tag", " my value " + myValue + myValue1);
-                Intent in = new Intent();
-                Bundle bundle = new Bundle();
-                bundle.putString("Latitude_added", myValue);
-                bundle.putString("Longitude_added", myValue1);
-                in.putExtras(bundle);
-                setResult(777, in);*/
                 finish();
             }
         }
 
     }
-
+    // Finding address using reverse Geo Coding
     private class ReverseGeocodingTask extends AsyncTask<LatLng, Void, String> {
-
-        // Finding address using reverse Geo Coding
         @Override
         protected String doInBackground(LatLng... params) {
             StringBuilder result = new StringBuilder();

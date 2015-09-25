@@ -245,7 +245,7 @@ public class MyAccountActivity extends Activity implements View.OnClickListener 
                 }
 
             } else if (data.equals(getString(R.string.search_location))) {
-                Intent intent = new Intent(getApplicationContext(), MyAccountActivity.class);
+                Intent intent = new Intent(getApplicationContext(), SearchAdvanceActivity.class);
                 //  startActivityForResult(intent, 101);
                 startActivity(intent);
                 finish();

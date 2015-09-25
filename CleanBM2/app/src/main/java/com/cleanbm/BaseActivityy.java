@@ -14,6 +14,8 @@ import android.support.v4.app.FragmentActivity;
 
 /**
  * Created by Ratufa.Paridhi on 8/28/2015.
+ *  BaseActivity extended by Splash activity. So that, when User forget to on Gps
+ *  this activity show pop up.
  */
 public class BaseActivityy extends FragmentActivity implements LocationListener {
 
@@ -47,16 +49,6 @@ public class BaseActivityy extends FragmentActivity implements LocationListener 
         super.onDestroy();
     }
 
-//	public void checkInternetConnection() {
-//		ConnectivityManager manager = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
-//		NetworkInfo ni = manager.getActiveNetworkInfo();
-//
-//		if (ni != null && ni.getState() == NetworkInfo.State.CONNECTED) {
-//
-//		} else {
-//			showNoInternetDialog();
-//		}
-//	}
 
     @Override
     public void onLocationChanged(Location location) {

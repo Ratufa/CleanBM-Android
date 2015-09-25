@@ -3,7 +3,6 @@ package com.cleanbm;
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.AlertDialog;
-import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -13,6 +12,7 @@ import android.graphics.drawable.BitmapDrawable;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.provider.MediaStore;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
@@ -40,25 +40,26 @@ import com.dialog.AlertDialogManager;
 import com.javabeans.ImagesBean;
 import com.javabeans.Popup_Menu_Item;
 import com.parse.GetCallback;
-import com.parse.ParseException;
 import com.parse.ParseFile;
 import com.parse.ParseGeoPoint;
 import com.parse.ParseObject;
-import com.parse.ParseQuery;
 import com.parse.ParseUser;
 import com.parse.SaveCallback;
 import com.widgets.HorizontalListView;
 
 import net.yazeed44.imagepicker.model.ImageEntry;
 import net.yazeed44.imagepicker.util.Picker;
+import net.yazeed44.imagepicker.ui.*;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.text.ParseException;
 import java.util.ArrayList;
 
 /**
  * Created by Ratufa.Paridhi on 8/13/2015.
+ *  We can add location in the parse
  */
 public class AddLocation extends Activity {
     private RatingBar rate_BathRoom;
@@ -68,21 +69,26 @@ public class AddLocation extends Activity {
     private TextView txtAddThisLocation;
     private ImageView ImageView_photo;
     private String rating_value, userName;
-    private String BathRoomtype = "Squat", user_Id, full_address, BathRoomDescription;
+    private String BathRoomtype = "Squat", user_Id, BathRoomDescription;
     private String TAG = "AddNewLocation";
     int imageCount = 1;
     private float rating;
-    private LinearLayout layout_imageCLick;
     private TextView txt_Titlebar;
     private double Gps_lat;
     private double Gps_lon;
     private EditText edtLocationName;
     private ArrayList<ImagesBean> imagesList = new ArrayList<ImagesBean>();
     private HorizontalListView hrzListView;
-    private ImageView img_navigation_icon, img_Menu; //,img_Cancel;
+    private ImageView img_navigation_icon, img_Menu;
     PopupMenuAdapter adapter;
     PopupWindow popupWindow;
+    private AlertDialogManager alert = new AlertDialogManager();
+    private PhotoAdapter1 photoAdapter1;
+    int CAPTURE_IMAGE_ACTIVITY_REQUEST_CODE=101;
 
+    /*
+        When we press on Backbutton icon or back button, it finish the current activity
+    */
     View.OnClickListener mMenuButtonClickListener = new View.OnClickListener() {
         @Override
         public void onClick(View v) {
@@ -91,16 +97,21 @@ public class AddLocation extends Activity {
             }
         }
     };
-    private AlertDialogManager alert = new AlertDialogManager();
 
+    /*
+    Add the location to the parse database
+    */
     View.OnClickListener mButtonClickListener = new View.OnClickListener() {
         @Override
         public void onClick(View v) {
 
             if (v == txtAddThisLocation) {
+                // Get the bathroom description from edit text
                 BathRoomDescription = edtBathRoomDescrip.getText().toString().trim();
+                // Get the bathroom rating from rating bar
                 float rate = rate_BathRoom.getRating();
                 Log.e(TAG, " rating " + rate);
+
                 if (BathRoomDescription.equals("")) {
                     alert.showAlertDialog(AddLocation.this, getResources().getString(R.string.enter_bath_description));
                 } else if (TextUtils.isNullOrEmpty(edtLocationName.getText().toString())) {
@@ -109,14 +120,21 @@ public class AddLocation extends Activity {
                     alert.showAlertDialog(AddLocation.this, "Please give rating");
                 } else {
                     if (Utils.isInternetConnected(AddLocation.this)) {
+                        // Get the current user detail from parse
                         ParseUser currentUser = ParseUser.getCurrentUser();
                         Log.e(TAG, " " + currentUser.getUsername());
                         if (!TextUtils.isNullOrEmpty(currentUser.getUsername())) {
+                            // If current user id login then add the location to the parse database
                             userName = currentUser.getString("name");
+                            // Getting current user Object id
                             user_Id = currentUser.getObjectId();
+                            // Calling the Async class which put all the data to the parse Table
                             HandlerAsync handlerAsync = new HandlerAsync();
                             handlerAsync.execute(edtLocationName.getText().toString());
                         } else {
+                            /*
+                                If user is not Login, Then this pop up will be open to show Login First.
+                            */
                             Log.e(TAG, "please login");
                             AlertDialog.Builder alertDialog = new AlertDialog.Builder(AddLocation.this);
                             // Setting Dialog Message
@@ -129,6 +147,10 @@ public class AddLocation extends Activity {
                                             String bathDes = edtBathRoomDescrip.getText().toString();
                                             float rating = rate_BathRoom.getRating();
                                             Log.d(TAG, " detail on click on login " + BathRoomDescription + " " + rating + " " + BathRoomtype);
+                                            /*
+                                                Store all the exisiting data filled in the form
+                                                and intent to the LoginActivity
+                                            */
                                             Intent in = new Intent(AddLocation.this, LoginActivity.class);
                                             in.putExtra("BathDescription", bathDes);
                                             in.putExtra("BathRating", rating);
@@ -146,32 +168,87 @@ public class AddLocation extends Activity {
                                     });
                             // Showing Alert Message
                             alertDialog.show();
-                            //      alert.showAlertDialog(AddLocation.this, getResources().getString(R.string.login_first_message));
                         }
                     } else {
+                        // When internet is not present, this else block will be run.
                         alert.showAlertDialog(AddLocation.this, getResources().getString(R.string.connection_not_available));
                     }
-                    // setProgress(false);
                 }
             } else if (v == ImageView_photo) {
-                new Picker.Builder(AddLocation.this, new MyPickListener(), R.style.MIP_theme)
+                /*
+                    TO select multiple images for upload.
+                    Library used to select multiple Images.
+                */
+               /* new Picker.Builder(AddLocation.this, new MyPickListener(), R.style.MIP_theme)
                         .setPickMode(Picker.PickMode.MULTIPLE_IMAGES)
                         .setLimit(10)
                         .build()
-                        .startActivity();
+                        .startActivity();*/
+
+                selectImage();
+
+               /* new Picker.Builder(AddLocation.this,new MyPickListener(),R.style.MIP_theme)
+                        .setPickMode(Picker.PickMode.MULTIPLE_IMAGES)
+                        .setLimit(10)
+                        .build()
+                        .startActivity();*/
             }
         }
     };
+    private void selectImage() {
+        final CharSequence[] items = { "Take Photo", "Choose from Gallery", "Cancel" };
+        AlertDialog.Builder builder = new AlertDialog.Builder(AddLocation.this);
+        builder.setTitle("Add Photo!");
+        builder.setItems(items, new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int item) {
+                if (items[item].equals("Take Photo")) {
+
+                    Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+                    // start the image capture Intent
+                    startActivityForResult(intent, CAPTURE_IMAGE_ACTIVITY_REQUEST_CODE);
+                } else if (items[item].equals("Choose from Gallery")) {
+                    new Picker.Builder(AddLocation.this, new MyPickListener(), R.style.MIP_theme)
+                            .setPickMode(Picker.PickMode.MULTIPLE_IMAGES)
+                            .setLimit(10)
+                            .build()
+                            .startActivity();
+
+                } else if (items[item].equals("Cancel")) {
+                    dialog.dismiss();
+                }
+            }
+        });
+        builder.show();
+    }
+   // - See more at: http://www.theappguruz.com/blog/android-take-photo-camera-gallery-code-sample#sthash.b6zO98qS.dpuf
+
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if(requestCode==CAPTURE_IMAGE_ACTIVITY_REQUEST_CODE)
+        {
+           String path=(String) data.getExtras().get("data");
+            ImagesBean imagesBean = new ImagesBean();
+
+            imagesBean.setUri(Uri.fromFile(new File(path)));
+            imagesList.add(imagesBean);
+            photoAdapter1.notifyDataSetChanged();
+        }
+    }
 
     private class MyPickListener implements Picker.PickListener {
         @Override
         public void onPickedSuccessfully(final ArrayList<ImageEntry> images) {
             for (int i = 0; i < images.size(); i++) {
                 Log.d(TAG, "Image Path : " + images.get(i).path + "\n");
+                // Setting the Image Path in the JavaBeans(ImageBean) and adding in the arraylist imageList
                 ImagesBean imagesBean = new ImagesBean();
                 imagesBean.setUri(Uri.fromFile(new File(images.get(i).path)));
                 imagesList.add(imagesBean);
             }
+            // PhotoAdapter is custom adapter for showing images on the Horizontal listview.
             photoAdapter1 = new PhotoAdapter1();
             hrzListView.setAdapter(photoAdapter1);
         }
@@ -182,16 +259,14 @@ public class AddLocation extends Activity {
         }
     }
 
-    private ProgressDialog pd;
-    private PhotoAdapter1 photoAdapter1;
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_add_location);
+
         // initialize pop up window
         popupWindow = showMenu();
-
+        // On Dismiss pop up, icon get changed.
         popupWindow.setOnDismissListener(new PopupWindow.OnDismissListener() {
             @Override
             public void onDismiss() {
@@ -199,29 +274,43 @@ public class AddLocation extends Activity {
             }
         });
 
+        /*
+            Home icon get changed to Back icon and set the on click listener
+            on the back icon.
+        */
         img_navigation_icon = (ImageView) findViewById(R.id.img_navigation_icon);
         img_navigation_icon.setImageResource(R.drawable.back_icon);
         img_navigation_icon.setVisibility(View.VISIBLE);
         img_navigation_icon.setOnClickListener(mMenuButtonClickListener);
 
+        /*
+            Setting the action bar title.
+        */
         txt_Titlebar = (TextView) findViewById(R.id.txt_Titlebar);
         txt_Titlebar.setText("Add Location");
-
+        /*
+            Navigation (menu icon) visiblity on and set the on click listener on menu.
+       */
         img_Menu = (ImageView) findViewById(R.id.navigation_icon);
         img_Menu.setVisibility(View.VISIBLE);
         img_Menu.setOnClickListener(mNavigationClickListener);
 
-        layout_imageCLick = (LinearLayout) findViewById(R.id.layout_imageCLick);
-
+        /*
+            Setting on click listener on the Select Photo option at the bottom in the form.
+        */
         ImageView_photo = (ImageView) findViewById(R.id.image_photo);
         ImageView_photo.setOnClickListener(mButtonClickListener);
 
         hrzListView = (HorizontalListView) findViewById(R.id.hrzListView);
+        /*
+            When i click on the images selected from library, cross icon will be appear.
+            and when we click on cross icon, it remove from the arraylist imageList
+            and notify the adapter
+        */
         hrzListView.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
             @Override
             public boolean onItemLongClick(AdapterView<?> adapterView, View view, final int position, long l) {
                 final ImageView ivCross = (ImageView) view.findViewById(R.id.ivCross);
-
                 ivCross.setVisibility(View.VISIBLE);
                 ivCross.setOnClickListener(new View.OnClickListener() {
                     @Override
@@ -234,6 +323,10 @@ public class AddLocation extends Activity {
             }
         });
 
+        /*
+            Setting the id of Rating bar and set on CLick listener on the rating bar.
+            Getting value from the rating bar
+        */
         rate_BathRoom = (RatingBar) findViewById(R.id.ratingBathRoom);
         rate_BathRoom.setOnRatingBarChangeListener(new RatingBar.OnRatingBarChangeListener() {
             @Override
@@ -242,6 +335,10 @@ public class AddLocation extends Activity {
             }
         });
 
+        /*
+            Setting the id of radio group
+            and get the value from radio button
+        */
         radioGroup = (RadioGroup) findViewById(R.id.radioGroup);
         radioGroup.setOnCheckedChangeListener(new RadioGroup.OnCheckedChangeListener() {
             @Override
@@ -254,9 +351,16 @@ public class AddLocation extends Activity {
             }
         });
 
+        /*
+            setting the id of bathroom description edit text
+            and after enter bathroom description,keyboard hide.
+        */
         edtBathRoomDescrip = (EditText) findViewById(R.id.edtBathRoomDescription);
         Utils.hideKeyBoard(getApplicationContext(), edtBathRoomDescrip);
-
+        /*
+            Setting the Location Name from the Intent.
+            Add new Location class pass the address and seting here.
+        */
         edtLocationName = (EditText) findViewById(R.id.edtLocationName);
         edtLocationName.setText(getIntent().getStringExtra("Address"));
 
@@ -266,7 +370,7 @@ public class AddLocation extends Activity {
         ParseObject parseObject = new ParseObject("User");
         parseObject.fetchInBackground(new GetCallback<ParseObject>() {
             @Override
-            public void done(ParseObject parseObject, ParseException e) {
+            public void done(ParseObject parseObject, com.parse.ParseException e) {
                 if (e == null) {
                     String user_id = parseObject.getString("objectId");
                     Log.e(TAG, "user_id" + user_id);
@@ -274,8 +378,12 @@ public class AddLocation extends Activity {
                     Log.e(TAG, "Error" + e.getLocalizedMessage());
                 }
             }
+
         });
 
+        /*
+            Parent scroll view can able to scroll.
+       */
         scrollView = (ScrollView) findViewById(R.id.scrollView);
         scrollView.setOnTouchListener(new View.OnTouchListener() {
             @Override
@@ -293,31 +401,42 @@ public class AddLocation extends Activity {
             }
         });
     }
+
+    /*
+        On menu button click, Popup window will be open up
+        and also changes the icon.
+    */
     View.OnClickListener mNavigationClickListener = new View.OnClickListener() {
         @Override
         public void onClick(View v) {
             v.setActivated(!v.isActivated());
             if (popupWindow.isFocusable()) {
-//                isClick = false;
                 img_Menu.setImageResource(R.drawable.cancel_icon);
             } else {
-//                isClick = true;
                 img_Menu.setImageResource(R.drawable.menu_icon);
             }
             popupWindow.showAsDropDown(v, -5, 0);
         }
     };
 
+     /*
+            Showing the pop up menu.
+
+     */
     public PopupWindow showMenu() {
         //Initialize a pop up window type
-        LayoutInflater inflater = (LayoutInflater) AddLocation.this.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-        LinearLayout layoutt = new LinearLayout(this);
+       LinearLayout layoutt = new LinearLayout(this);
         PopupWindow popupWindow = new PopupWindow(layoutt, LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT, true);
 
         ParseUser currentUser = ParseUser.getCurrentUser();
-        Popup_Menu_Item menus[] = new Popup_Menu_Item[5];
+        Popup_Menu_Item menus[];
+        // Getting the Emailverified value from the parse to check whether User email is verified or not
         Boolean email_verify = currentUser.getBoolean("emailVerified");
         Log.d("Splash screen "," "+email_verify);
+        /*
+            If User is verify and successfully login
+            then If block will be run and showing "Logout" option.
+        */
         if (currentUser.getUsername() != null && email_verify==true) {
             menus = new Popup_Menu_Item[]{
                     new Popup_Menu_Item(R.drawable.home_icon, getResources().getString(R.string.Home)),
@@ -329,6 +448,10 @@ public class AddLocation extends Activity {
                     new Popup_Menu_Item(R.drawable.sign_out_button, getResources().getString(R.string.Logout)),
             };
         } else {
+         /*
+            If User is not verify
+            then else block will be run and showing "Sign Up" option.
+         */
             menus = new Popup_Menu_Item[]{
                     new Popup_Menu_Item(R.drawable.home_icon, getResources().getString(R.string.Home)),
                     new Popup_Menu_Item(R.drawable.location_icon, getResources().getString(R.string.search_near_me)),
@@ -339,19 +462,15 @@ public class AddLocation extends Activity {
             };
         }
 
-        Log.e("Array size", menus.length + " ");
+        // Setting the popup Menu list in the adapter
         adapter = new PopupMenuAdapter(AddLocation.this, R.layout.popup_menu_item, menus);
-        Log.e("After adapter", menus.length + " ");
         //the drop down list in a listview
         ListView lstMenu = new ListView(AddLocation.this);
-        //ListView lstMenu= (ListView)findViewById(R.id.listView1);
-        // lstMenu.setVisibility(View.VISIBLE);
-
         // set our adapter and pass our pop up window content
         lstMenu.setAdapter(adapter);
         // adapter.notifyDataSetChanged();
         lstMenu.setDivider(getResources().getDrawable(R.drawable.menu_line));
-        // lstMenu.setCacheColorHint(Color.TRANSPARENT);
+        // Setting the alpha on list
         lstMenu.setAlpha(.93f);
 
         Animation fadeInAnimation = AnimationUtils.loadAnimation(getApplicationContext(), android.R.anim.fade_in);
@@ -365,22 +484,17 @@ public class AddLocation extends Activity {
         popupWindow.setFocusable(true);
         popupWindow.setBackgroundDrawable(new BitmapDrawable());
 
-        // popupWindow.setWidth(width);
-        //  popupWindow.setHeight(WindowManager.LayoutParams.WRAP_CONTENT);
-
         // set the list view as pop up window content
         popupWindow.setContentView(lstMenu);
         return popupWindow;
     }
 
-
+    /*
+        WHen we click on the Pop up menu list item then, this listener will be called
+    */
     public class DropdownOnItemClickListener implements AdapterView.OnItemClickListener {
-
-        String TAG = "AddLocation.java";
-
         @Override
         public void onItemClick(AdapterView<?> parent, View v, int position, long arg3) {
-
             // get the context and main activity to access variables
             Context mContext = v.getContext();
             AddLocation mainActivity = ((AddLocation) mContext);
@@ -395,40 +509,41 @@ public class AddLocation extends Activity {
             // dismiss the pop up
             mainActivity.popupWindow.dismiss();
 
-            Popup_Menu_Item popup_menu_item = new Popup_Menu_Item();
-            // String data=popup_menu_item.title;
-            // String data=parent.getItemAtPosition(position).toString();
-
             Popup_Menu_Item info = (Popup_Menu_Item) parent.getItemAtPosition(position);
             String data = info.title;
 
-            Log.e("Tag", data);
             if (data.equals(getString(R.string.Home))) {
+                // Click on Home menu, it finish the current activity
                 finish();
             } else if (data.equals(getString(R.string.search_near_me))) {
+                // Click on Search Near me menu, It intent to the DashBoardActivity
+                // Showing nearest bathroom and hotel/restaurant
                 if (Utils.isInternetConnected(AddLocation.this)) {
                     Intent intent = new Intent(getApplicationContext(), DashBoardActivity.class);
                     startActivity(intent);
                     finish();
                 } else {
+                    // If internet is not present.
                     alert.showAlertDialog(AddLocation.this, getResources().getString(R.string.connection_not_available));
                 }
 
             } else if (data.equals(getString(R.string.search_location))) {
-                Intent intent = new Intent(getApplicationContext(), AddLocation.class);
-                //  startActivityForResult(intent, 101);
+                // Click on Search Location
+                Intent intent = new Intent(getApplicationContext(), SearchAdvanceActivity.class);
                 startActivity(intent);
                 finish();
             } else if (data.equals(getString(R.string.add_new_location))) {
+                // Click on Add new Location menu
                 Intent intent = new Intent(getApplicationContext(), AddNewLocationActivity.class);
-                //   startActivity(intent);
                 startActivityForResult(intent, 777);
                 finish();
             } else if (data.equals(getString(R.string.support))) {
+                // Support Menu
                 Intent intent = new Intent(getApplicationContext(), SupportActivity.class);
                 startActivity(intent);
                 finish();
             } else if (data.equals(getString(R.string.my_account))) {
+                // My Account Menu
                 Intent intent = new Intent(getApplicationContext(), MyAccountActivity.class);
                 startActivity(intent);
                 finish();
@@ -492,41 +607,15 @@ public class AddLocation extends Activity {
         return true;
     }
 
-    public void setProgress(boolean visibility) {
-        if (visibility) {
-            try {
-                if (pd == null) {
-                    pd = new ProgressDialog(AddLocation.this);
-                    pd.setTitle("");
-                    pd.setMessage(getString(R.string.loading));
-                    pd.setIndeterminateDrawable(getResources().getDrawable(R.drawable.progress_dialog));
-                    pd.setCancelable(true);
-                    if (!pd.isShowing())
-                        pd.show();
-                } else {
-                    if (!pd.isShowing())
-                        pd.show();
-                }
-            } catch (Exception e) {
-                Utils.sendExceptionReport(e, getApplicationContext());
-                e.printStackTrace();
-            }
-        } else {
-            try {
-                if (pd.isShowing())
-                    pd.dismiss();
-            } catch (Exception e) {
-                Utils.sendExceptionReport(e, getApplicationContext());
-                e.printStackTrace();
-            }
-        }
-    }
-
+        /*
+            Adding all the detail of location in parse table
+        */
     public class HandlerAsync extends AsyncTask<String, String, String> {
         @Override
         protected void onPreExecute() {
             super.onPreExecute();
-            setProgress(true);
+            Utils.setProgress(AddLocation.this, true);
+          //  setProgress(true);
         }
 
         @Override
@@ -539,6 +628,7 @@ public class AddLocation extends Activity {
 
             rating = Float.parseFloat(rating_value);
 
+            // Adding all the detail in BathRoom Detail table
             final ParseObject parseObject = new ParseObject("BathRoomDetail");
             parseObject.put("bathRating", rating);
             parseObject.put("description", BathRoomDescription);
@@ -546,16 +636,18 @@ public class AddLocation extends Activity {
             parseObject.put("bathLocation", point);
             parseObject.put("userId", user_Id);
             parseObject.put("userInfo", ParseUser.getCurrentUser());
-            Log.d(TAG, " Before Parse full address" + full_address);
+          //  Log.d(TAG, " Before Parse full address" + full_address);
             parseObject.put("bathFullAddress", params[0]);
             parseObject.put("approve", "YES");
 
             Log.e(TAG, rating_value + "" + BathRoomDescription + " " + BathRoomtype + " ");
 
             parseObject.saveInBackground(new SaveCallback() {
-                public void done(ParseException e) {
-                    if (e == null) {
+                @Override
+                public void done(com.parse.ParseException e) {
 
+                    if (e == null) {
+                        // If Bath Room detail is successfully added then RatingByUser table is filled by review.
                         String bath_room_id = parseObject.getObjectId();
                        final ParseObject parseObject1 = new ParseObject("RattingByUser");
                         parseObject1.put("bathRoomID", bath_room_id);
@@ -565,22 +657,12 @@ public class AddLocation extends Activity {
                         parseObject1.put("bathRoomType", BathRoomtype);
                         parseObject1.put("userName", userName);
                         parseObject1.put("userInfo", ParseUser.getCurrentUser());
-                        ParseQuery<ParseObject> query = ParseQuery.getQuery("BathRoomDetail");
-                        query.getInBackground(bath_room_id, new GetCallback<ParseObject>() {
-                            public void done(ParseObject object, ParseException e) {
-                                if (e == null) {
-                                    Log.d(TAG," Get bathroom details "+object.getString("bathRating")+object.getString("description")+object.getObjectId());
-                                    parseObject1.put("bathInfo", object);
-                                } else {
-                                    // something went wrong
-                                }
-                            }
-                        });
-                       // ParseObject myBathRoomDetailPtr = ParseObject.createWithoutData("BathRoomDetail", parseObject.getObjectId());
+                        parseObject1.put("bathInfo", ParseObject.createWithoutData("BathRoomDetail", bath_room_id));
 
                         parseObject1.saveInBackground();
 
                         if (imagesList != null) {
+                            // If User pick the images from gallery or camera, then it goes to BathroomImages table
                             for (int i = 0; i < imagesList.size(); i++) {
                                 try {
                                     Log.d(TAG, " image url" + imagesList.get(i).getUri());
@@ -606,15 +688,7 @@ public class AddLocation extends Activity {
                                     parseObject.put("bathroomImage", file);
                                     parseObject.put("approve", "YES");
                                     parseObject.put("userInfo", ParseUser.getCurrentUser());
-                                    query.getInBackground(bath_room_id, new GetCallback<ParseObject>() {
-                                        public void done(ParseObject object, ParseException e) {
-                                            if (e == null) {
-                                                parseObject.put("bathInfo", object);
-                                            } else {
-                                                // something went wrong
-                                            }
-                                        }
-                                    });
+                                    parseObject.put("bathInfo", ParseObject.createWithoutData("BathRoomDetail", bath_room_id));
 
                                     // Create the class and the columns
                                     parseObject.saveInBackground();
@@ -625,7 +699,6 @@ public class AddLocation extends Activity {
                             }
                         }
                     } else {
-                        //   myObjectSaveDidNotSucceed();
                     }
                 }
             });
@@ -635,7 +708,8 @@ public class AddLocation extends Activity {
         @Override
         protected void onPostExecute(String s) {
             super.onPostExecute(s);
-            setProgress(false);
+            Utils.setProgress(AddLocation.this,false);
+           // setProgress(false);
             edtBathRoomDescrip.setText("");
             rate_BathRoom.setRating(0);
 
@@ -643,7 +717,9 @@ public class AddLocation extends Activity {
             // Setting Dialog Title
             alertDialog.setTitle("Thank you for your Submission.");
             // Setting Dialog Message
-            alertDialog.setMessage("Your location has been added and awaiting approval from the CleanBM Team.  You will receive a notification once it is approved.");
+         //   alertDialog.setMessage("Your location has been added and awaiting approval from the CleanBM Team.  You will receive a notification once it is approved.");
+            alertDialog.setMessage("Your location has been added successfully.");
+
             // Setting Positive "Yes" Button
             alertDialog.setPositiveButton("OK",
                     new DialogInterface.OnClickListener() {
@@ -659,6 +735,9 @@ public class AddLocation extends Activity {
         }
     }
 
+    /*
+        PhotoAdapter for Showing photos on the horizontal listview.
+    */
     class PhotoAdapter1 extends BaseAdapter {
 
         private LayoutInflater inflater = null;

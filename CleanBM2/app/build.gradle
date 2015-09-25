@@ -38,7 +38,7 @@ buildscript {
         classpath 'com.parse.tools:gradle:1.+'
     }
 }
-
+/*
 // add external respository url in addition to having
 // your preferred repository.
 repositories {
@@ -52,12 +52,13 @@ repositories {
     maven {
         url "https://dl.bintray.com/yazeed44/maven"
     }
-}
+}*/
 
 dependencies {
     //  compile fileTree(dir: 'libs', include: ['*.jar'])
     compile 'com.android.support:appcompat-v7:23.0.1'
     compile 'com.parse.bolts:bolts-android:1.2.0'
+    compile project(':imagepicker')
     compile fileTree(dir: 'libs', include: 'Parse-*.jar')
     compile fileTree(dir: 'libs', include: 'ParseFacebookUtilsV4-1.9.4.jar')
     compile fileTree(dir: 'libs', include: 'ParseCrashReporting-*.jar')
@@ -66,7 +67,7 @@ dependencies {
     compile 'com.koushikdutta.ion:ion:2.+'
     compile 'com.android.support:multidex:1.0.1'
     compile 'com.google.api-client:google-api-client:1.10.3-beta'
-    compile 'net.yazeed44.imagepicker:imagepicker:1.2.1'
+    /*compile 'net.yazeed44.imagepicker:imagepicker:1.2.1'*/
     compile 'com.google.android.gms:play-services-ads:7.8.0'
 }
 

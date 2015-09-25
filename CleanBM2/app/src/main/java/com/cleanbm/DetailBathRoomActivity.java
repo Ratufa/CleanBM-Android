@@ -1,5 +1,6 @@
 package com.cleanbm;
 
+import android.annotation.SuppressLint;
 import android.app.AlertDialog;
 import android.app.ProgressDialog;
 import android.content.Context;
@@ -24,6 +25,7 @@ import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.view.animation.BounceInterpolator;
 import android.widget.AdapterView;
+import android.widget.BaseAdapter;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ListView;
@@ -44,6 +46,8 @@ import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.javabeans.BathRoomDetail;
+import com.javabeans.BathroomImages;
+import com.javabeans.ImagesBean;
 import com.javabeans.Popup_Menu_Item;
 import com.javabeans.ReviewListItem;
 import com.koushikdutta.ion.Ion;
@@ -60,6 +64,7 @@ import com.swipemenulistview.SwipeMenu;
 import com.swipemenulistview.SwipeMenuCreator;
 import com.swipemenulistview.SwipeMenuItem;
 import com.swipemenulistview.SwipeMenuListView;
+import com.widgets.HorizontalListView;
 
 import net.yazeed44.imagepicker.model.ImageEntry;
 import net.yazeed44.imagepicker.util.Picker;
@@ -77,7 +82,8 @@ public class DetailBathRoomActivity extends FragmentActivity implements SwipeMen
     public TextView txtBathAddress, txtGiveReview, txtReviewNumber, txt_Titlebar;
     private String user_Id;
     private SwipeMenuListView lstReview;
-    private String bath_full_address, bathroom_id;
+    private String bath_full_address, bathroom_id,bathroom_img_id;
+    String userId_who_posted_img;
     private RatingBar ratingBathRoom;
     private TextView txtAddPhotos;
     private String TAG = "DetailBathRoomActivity";
@@ -89,6 +95,8 @@ public class DetailBathRoomActivity extends FragmentActivity implements SwipeMen
     TextView txt_LeftImgButton,txt_RightImgButton;
     PopupMenuAdapter adapter;
     PopupWindow popupWindow;
+
+    private HorizontalListView hrzListView;
 
     SwipeMenuCreator creator = new SwipeMenuCreator() {
 
@@ -192,14 +200,11 @@ public class DetailBathRoomActivity extends FragmentActivity implements SwipeMen
         }
     };
 
-    private ViewGroup mSelectedImagesContainer;
-    private LinearLayout horizontalGalleryView;
-    private ArrayList<String> imageList, captionList;
     private LayoutInflater vi;
     private View v;
     private ImageView singleImage, img_navigation_icon;
     private GoogleMap mMap;
-    private ImageView img_Menu, img_Cancel;
+    private ImageView img_Menu;
     private ProgressDialog pd;
     BathRoomDetail bathRoomDetail;
 
@@ -223,6 +228,9 @@ public class DetailBathRoomActivity extends FragmentActivity implements SwipeMen
 
         txt_RightImgButton = (TextView)findViewById(R.id.txt_RightImgButton);
         txt_LeftImgButton =(TextView)findViewById(R.id.txt_LeftImgButton);
+        txt_RightImgButton.setOnClickListener(mImageMoveListener);
+        txt_LeftImgButton.setOnClickListener(mImageMoveListener);
+
         txtBathAddress = (TextView) findViewById(R.id.txtBathAddress);
 
         ratingBathRoom = (RatingBar) findViewById(R.id.ratingBathRoom);
@@ -320,8 +328,8 @@ public class DetailBathRoomActivity extends FragmentActivity implements SwipeMen
         });
 
 
-        imageList = new ArrayList<String>();
-        horizontalGalleryView = (LinearLayout) findViewById(R.id.horizontalGallery);
+        hrzListView = (HorizontalListView) findViewById(R.id.hrzListView);
+        //horizontalGalleryView = (LinearLayout) findViewById(R.id.horizontalGallery);
 
         //txtBathTitle.setText(bath_name);
         txtBathAddress.setText(bath_full_address);
@@ -344,6 +352,9 @@ public class DetailBathRoomActivity extends FragmentActivity implements SwipeMen
                 getResources().getDisplayMetrics());
     }
 
+    ArrayList<BathroomImages> arrayList_bathroomImg = new ArrayList<BathroomImages>();
+    PhotoAdapter1 photoAdapter1;
+
     public void showBathRoomImages() {
         // Locate the class table named "ImageUpload" in Parse.com
         ParseQuery<ParseObject> query = new ParseQuery<ParseObject>("BathroomImages");
@@ -354,29 +365,63 @@ public class DetailBathRoomActivity extends FragmentActivity implements SwipeMen
             @Override
             public void done(List<ParseObject> list, ParseException e) {
 
-                horizontalGalleryView.removeAllViews();
+                       // horizontalGalleryView.removeAllViews();
 
                 for (ParseObject parseObject : list) {
                     ParseFile postImage = parseObject.getParseFile("bathroomImage");
-
+                    bathroom_img_id = parseObject.getObjectId();
+                    userId_who_posted_img = parseObject.getString("userId");
+                    Log.d(TAG,"bathroom id and user id who posted"+bathroom_img_id+" "+userId_who_posted_img);
                     if (postImage != null) {
                         Uri imageUri = Uri.parse(postImage.getUrl());
 
-                        // Get the ImageView from  main.xml
-                        vi = (LayoutInflater) getApplicationContext().getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-                        v = vi.inflate(R.layout.horizontal_home_image_item, null);
-                        singleImage = (ImageView) v.findViewById(R.id.imageView_mockgalleryItem); //https://github.com/koush/ion
-//                        singleImage.setImageBitmap(bmp);
-
-                        Ion.with(singleImage).load(imageUri.toString());
-                        ((ViewGroup) horizontalGalleryView).addView(v, 0, new ViewGroup.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+                        BathroomImages bathroomImages = new BathroomImages(imageUri,userId_who_posted_img,bathroom_img_id);
+                        arrayList_bathroomImg.add(bathroomImages);
                     }
                 }
+                photoAdapter1 = new PhotoAdapter1();
+                 hrzListView.setAdapter(photoAdapter1);
+                // Set the emptyView to the ListView : http://www.myandroidsolutions.com/2014/09/25/listview-empty-message/
+                hrzListView.setEmptyView(findViewById(R.id.emptyElement));
+
+                /*
+                    Onclick operation on the Image click
+                    intent to the new activity.
+                */
+                hrzListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+                    @Override
+                    public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                        final String Uri = arrayList_bathroomImg.get(position).getUri().toString();
+                        userId_who_posted_img = arrayList_bathroomImg.get(position).getUser_id_posted_img();
+                        bathroom_img_id =arrayList_bathroomImg.get(position).getBathroom_img_id();
+                      //  Toast.makeText(getApplicationContext()," "+ arrayList_bathroomImg.get(position).getBathroom_img_id(),Toast.LENGTH_SHORT).show();
+                        Intent intent = new Intent(getApplicationContext(),FullImageViewActivity.class);
+                        intent.putExtra("Image_Uri",Uri);
+                        intent.putExtra("Bathroom_id",bathroom_id);
+                        intent.putExtra("Bathroom_img_id",bathroom_img_id);
+                        intent.putExtra("userId_who_posted_img",userId_who_posted_img);
+                        startActivity(intent);
+                    }
+                });
 
             }
         });
     }
 
+
+    View.OnClickListener mImageMoveListener = new View.OnClickListener() {
+        @Override
+        public void onClick(View v) {
+            if(v== txt_LeftImgButton)
+            {
+                hrzListView.scrollTo(-90);
+            }
+            else if(v ==txt_RightImgButton)
+            {
+
+            }
+        }
+    };
 
     @Override
     protected void onResume() {
@@ -448,7 +493,8 @@ public class DetailBathRoomActivity extends FragmentActivity implements SwipeMen
                     parseObject.put("userId", user_Id);
                     // Create a column named "ImageFile" and insert the image
                     parseObject.put("bathroomImage", file);
-                    parseObject.put("approve", "NO");
+                    parseObject.put("reportCount","0");
+                    parseObject.put("approve", "YES");
 
                     Log.d(TAG, " " + bathroom_id + " " + user_Id);
 
@@ -459,9 +505,9 @@ public class DetailBathRoomActivity extends FragmentActivity implements SwipeMen
 
                 AlertDialog.Builder alertDialog = new AlertDialog.Builder(DetailBathRoomActivity.this);
                 // Setting Dialog Title
-                alertDialog.setTitle("Approval Message");
+                alertDialog.setTitle("Thank you for Submission");
                 // Setting Dialog Message
-                alertDialog.setMessage("Photos are successfully added and waiting for approval");
+                alertDialog.setMessage("Photos are successfully added.");
                 // Setting Positive "Yes" Button
                 alertDialog.setPositiveButton("OK",
                         new DialogInterface.OnClickListener() {
@@ -602,21 +648,7 @@ public class DetailBathRoomActivity extends FragmentActivity implements SwipeMen
 
     @Override
     public boolean onMenuItemClick(int position, SwipeMenu menu, int index) {
-        //ApplicationInfo item = mAppList.get(position);
         ParseUser currentUser = ParseUser.getCurrentUser();
-        // Creating pointer of bathroom detail class
-       final  ParseObject obj_bathroomdetail= new ParseObject("BathRoomDetail");
-        obj_bathroomdetail.setObjectId(bathRoomDetail.getBath_id());
-        ParseGeoPoint parseGeoPoint = new ParseGeoPoint(bathRoomDetail.getLat(),bathRoomDetail.getLongg());
-        obj_bathroomdetail.put("bathLocation",parseGeoPoint);
-        obj_bathroomdetail.put("description",bathRoomDetail.getBath_room_description());
-
-        final ParseObject myBathRoomDetailPtr = ParseObject.createWithoutData("BathRoomDetail", obj_bathroomdetail.getObjectId());
-
-        // Creating pointer of Rating by User class
-        ParseObject obj_RatingByUser= new ParseObject("RattingByUser");
-        final ParseObject myRattingByUserPtr = ParseObject.createWithoutData("RattingByUser", obj_RatingByUser.getObjectId());
-
         switch (index) {
             case 0:
 
@@ -665,9 +697,21 @@ public class DetailBathRoomActivity extends FragmentActivity implements SwipeMen
                                                 parseObject.put("reportedUser", user_Id);  // Who login to account
                                                 parseObject.put("reportCount", reportCount);
                                                 parseObject.put("reportedUserInfo", ParseUser.getCurrentUser()); // Pointer of current user
-                                                parseObject.put("bathInfo", bathRoomDetail); // pointer of bathroom detail
-                                                parseObject.put("reviewInfo", myRattingByUserPtr); // pointer of RatingbyUser
+                                                parseObject.put("bathInfo", ParseObject.createWithoutData("BathRoomDetail", bathroom_id));// pointer of bathroom detail
+                                                parseObject.put("reviewInfo", ParseObject.createWithoutData("RattingByUser", rreview_id)); // pointer of RatingbyUser
                                                 parseObject.saveInBackground();
+                                                //   ParseObject ratingByUser = new ParseObject("RattingByUser");
+                                                final ParseQuery<ParseObject> query = ParseQuery.getQuery("RattingByUser");
+                                                query.getInBackground(rreview_id, new GetCallback<ParseObject>() {
+                                                    public void done(ParseObject object, ParseException e) {
+                                                        if (e == null) {
+                                                            object.increment("reportCount", 1);
+                                                            object.saveInBackground();
+                                                        } else {
+                                                            // something went wrong
+                                                        }
+                                                    }
+                                                });
                                                 Toast.makeText(getApplicationContext(), "Successfully added report", Toast.LENGTH_SHORT).show();
 
 
@@ -769,8 +813,9 @@ public class DetailBathRoomActivity extends FragmentActivity implements SwipeMen
                                 parseObject.put("reviewUserId", review_user_id);
                                 parseObject.put("likeCount", reviewLike);
                                 parseObject.put("likeUserInfo", ParseUser.getCurrentUser()); // Pointer of current User
-                                parseObject.put("bathInfo", myBathRoomDetailPtr);   // pointer of Bathroom detail
-                                parseObject.put("reviewInfo", myRattingByUserPtr); // pointer of RatingbyUser
+                                parseObject.put("bathInfo", ParseObject.createWithoutData("BathRoomDetail", bathroom_id));// pointer of bathroom detail
+                                parseObject.put("reviewInfo", ParseObject.createWithoutData("RattingByUser", rreview_id)); // pointer of RatingbyUser
+
                                 //   parseObject.saveInBackground();
                                 parseObject.saveInBackground(new SaveCallback() {
                                     @Override
@@ -995,7 +1040,7 @@ public class DetailBathRoomActivity extends FragmentActivity implements SwipeMen
                 }
 
             } else if (data.equals(getString(R.string.search_location))) {
-                Intent intent = new Intent(getApplicationContext(), DetailBathRoomActivity.class);
+                Intent intent = new Intent(getApplicationContext(), SearchAdvanceActivity.class);
                 //  startActivityForResult(intent, 101);
                 startActivity(intent);
                 finish();
@@ -1057,6 +1102,62 @@ public class DetailBathRoomActivity extends FragmentActivity implements SwipeMen
             }
         }
 
+    }
+
+    /*
+       PhotoAdapter for Showing photos on the horizontal listview.
+   */
+    class PhotoAdapter1 extends BaseAdapter {
+
+        private LayoutInflater inflater = null;
+        private ViewHolder viewHolder;
+
+        public PhotoAdapter1() {
+            inflater = (LayoutInflater) DetailBathRoomActivity.this.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+        }
+
+        @Override
+        public int getCount() {
+            return arrayList_bathroomImg.size();
+        }
+
+        @Override
+        public Object getItem(int position) {
+            return arrayList_bathroomImg.get(position);
+        }
+
+        @Override
+        public long getItemId(int position) {
+            return position;
+        }
+
+        @SuppressLint("InflateParams")
+        @Override
+        public View getView(final int position, View convertView, ViewGroup parent) {
+            BathroomImages bean = (BathroomImages) getItem(position);
+            try {
+                viewHolder = new ViewHolder();
+                if (convertView == null) {
+                    convertView = inflater.inflate(R.layout.item_imageview, null);
+                    viewHolder.mImageView = (ImageView) convertView.findViewById(R.id.imageView);
+                  //  viewHolder.ivCross = (ImageView) convertView.findViewById(R.id.ivCross);
+                    convertView.setTag(viewHolder);
+                } else {
+                    viewHolder = (ViewHolder) convertView.getTag();
+                }
+                Ion.with(viewHolder.mImageView).load(String.valueOf(bean.getUri()));
+
+                //viewHolder.mImageView.setImageURI(bean.getUri());
+
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            return convertView;
+        }
+
+        public class ViewHolder {
+            private ImageView mImageView;
+        }
     }
 
 }

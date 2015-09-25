@@ -12,7 +12,7 @@
     <string name="OK">OK</string>
     <string name="enter_name">Please enter your name.</string>
     <string name="enter_email">Please enter your valid email id.</string>
-    <string name="enter_password">Your password must be more or equal to 4 alphabets.</string>
+    <string name="enter_password">Your password must be at least 4 characters long. Please try another.</string>
     <string name="enter_Confirmpassword">You cannot leave this empty.</string>
     <string name="passwordmismatch">Your password does not match.</string>
     <string name="enter_email_hint">Enter your email id to reset the password.</string>

@@ -2,6 +2,7 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    xmlns:widget="http://schemas.android.com/apk/res-auto"
     android:orientation="vertical">
 
     <include
@@ -61,11 +62,6 @@
                 android:orientation="vertical">
 
 
-                <!--  <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="match_parent"
-                        android:orientation="vertical">-->
-
                 <RelativeLayout
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
@@ -96,22 +92,6 @@
 
                 </RelativeLayout>
 
-                <!-- <LinearLayout
-                     android:orientation="vertical"
-                     android:layout_width="match_parent"
-                     android:layout_height="wrap_content"
-                     android:layout_marginLeft="20sp"
-                     android:layout_marginRight="20sp"
-                     android:layout_marginTop="2sp"
-                     >
-
-                     <TextView
-                         android:layout_width="wrap_content"
-                         android:layout_height="wrap_content"
-                         android:text="New Text"
-                         android:id="@+id/txtBathAddress" />
-                 </LinearLayout>-->
-
                 <RelativeLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -125,18 +105,12 @@
                         android:id="@+id/txtReviewNumber"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="130" />
-
-                    <!-- <TextView
-                         android:id="@+id/txtReview"
-                         android:layout_width="wrap_content"
-                         android:layout_height="wrap_content"
-                         android:layout_marginLeft="20sp"
-                         android:text="Review" />-->
+                        android:textColor="#FA9F09"
+                        android:text="0 Review" />
 
                     <TextView
                         android:id="@+id/txtGiveReview"
-                        android:layout_width="150dp"
+                        android:layout_width="140dp"
                         android:layout_height="30dp"
                         android:layout_alignParentEnd="true"
                         android:layout_alignParentRight="true"
@@ -150,46 +124,16 @@
 
                 </RelativeLayout>
 
-                <!--     <LinearLayout
-                         android:orientation="horizontal"
-                         android:layout_width="wrap_content"
-                         android:layout_height="wrap_content"
-                         android:layout_gravity="left"
-                         android:layout_marginLeft="20sp"
-                         >
-                         <RadioGroup
-                             android:id="@+id/radioLikeUnlike"
-                             android:layout_width="match_parent"
-                             android:layout_height="wrap_content"
-                             android:orientation="horizontal"
-                             android:gravity="center_vertical|center"
-                             >
-                             <RadioButton
-                                 android:layout_width="wrap_content"
-                                 android:layout_height="wrap_content"
-                                 android:background="@drawable/like_radio"
-                                 android:button="@android:color/transparent"
-                                 android:id="@+id/radio_like" />
-
-                             <RadioButton
-                                 android:layout_width="wrap_content"
-                                 android:layout_height="wrap_content"
-                                 android:background="@drawable/unlike_radio"
-                                 android:button="@android:color/transparent"
-                                 android:id="@+id/radio_unlike"
-                                 android:layout_marginLeft="5dp"
-                                 />
-
-                         </RadioGroup>
-
-                     </LinearLayout>-->
-
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:layout_marginTop="10sp"
+                    android:background="@android:color/darker_gray"
+                    ></View>
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_gravity="center|center_vertical"
-                    android:layout_marginBottom="10sp"
-                    android:layout_marginTop="10sp"
                     android:background="@color/light_gray"
                     android:orientation="horizontal">
 
@@ -198,34 +142,45 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_gravity="center_vertical"
-                        android:layout_margin="5sp"
+                        android:layout_margin="5dp"
                         android:background="@drawable/left_back_icon" />
 
-                    <HorizontalScrollView
-                        android:id="@+id/hori_scroll_view"
+                    <com.widgets.HorizontalListView
+                        android:id="@+id/hrzListView"
                         android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_gravity="center_vertical"
+                        android:layout_height="131dp"
+                        android:divider="#878787"
                         android:layout_weight="1"
-                        android:scrollbars="none">
+                        widget:dividerWidth="2dp" />
 
-                        <LinearLayout
-                            android:id="@+id/horizontalGallery"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_margin="10dp"
-                            android:orientation="horizontal" />
-                    </HorizontalScrollView>
+                    <TextView android:layout_width="match_parent"
+                        android:layout_height="131dp"
+                        android:id="@+id/emptyElement"
+                        android:text="No images available!"
+                        android:textSize="18sp"
+                        android:visibility="gone"
+                        android:layout_weight="1"
+                        android:layout_centerInParent="true"
+                        android:layout_gravity="center_vertical"
+                        android:gravity="center"
+                        android:textColor="@android:color/holo_blue_dark"/>
 
                     <TextView
                         android:id="@+id/txt_RightImgButton"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_gravity="center_vertical"
-                        android:layout_margin="5sp"
+                        android:layout_margin="5dp"
                         android:background="@drawable/right_back_icon" />
 
                 </LinearLayout>
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:background="@android:color/darker_gray"
+                    android:layout_marginBottom="10sp"
+                    ></View>
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -244,62 +199,21 @@
                         android:id="@+id/txtAddPhotos"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_gravity="center"
-                        android:layout_marginLeft="8sp"
+                        android:layout_gravity="center_vertical"
+                        android:paddingBottom="5dp"
+                        android:paddingLeft="10dp"
+                        android:paddingRight="5dp"
                         android:text="Add Photos"
-                        android:textAppearance="?android:attr/textAppearanceMedium" />
+                        android:textColor="@android:color/holo_blue_dark"
+                       android:textSize="16sp" />
                 </LinearLayout>
 
-                <!--   <LinearLayout
-                       android:orientation="vertical"
-                       android:layout_width="match_parent"
-                       android:layout_height="wrap_content"
-                       android:layout_marginTop="20sp"
-                       android:layout_marginLeft="10sp"
-                       android:layout_marginRight="20sp"
-                       >
-
-
-                       <TextView
-                           android:layout_width="wrap_content"
-                           android:layout_height="wrap_content"
-                           android:textAppearance="?android:attr/textAppearanceLarge"
-                           android:text="Description"
-                           android:layout_marginLeft="8sp"
-                           android:id="@+id/txt_Descr" />
-
-                       <TextView
-                           android:layout_width="wrap_content"
-                           android:layout_height="wrap_content"
-                           android:textAppearance="?android:attr/textAppearanceSmall"
-                           android:text="Description"
-                           android:layout_marginTop="10sp"
-                           android:layout_marginLeft="8sp"
-                           android:id="@+id/txtDescription" />
-                   </LinearLayout>
-
-                   <View
-                       android:layout_width="match_parent"
-                       android:layout_height="1sp"
-                       android:layout_marginTop="20sp"
-                       android:background="@drawable/detail_line"
-                       ></View>-->
                 <View
                     android:layout_width="match_parent"
                     android:layout_height="1sp"
                     android:layout_marginTop="10sp"
                     android:background="@drawable/detail_line" />
 
-                <!--<LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:layout_marginLeft="20sp"
-                    android:layout_marginRight="20sp"
-                    android:layout_marginTop="20sp"
-                    android:orientation="vertical">
-
-
-                </LinearLayout>-->
                 <TextView
                     android:id="@+id/txtRevieww"
                     android:layout_width="wrap_content"
@@ -308,7 +222,7 @@
                     android:layout_marginRight="20dp"
                     android:layout_marginTop="20dp"
                     android:text="Reviews"
-                    android:textAppearance="?android:attr/textAppearanceLarge" />
+                    android:textAppearance="?android:attr/textAppearanceMedium" />
 
 
                 <com.swipemenulistview.SwipeMenuListView

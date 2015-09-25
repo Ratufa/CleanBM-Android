@@ -10,7 +10,7 @@
         android:layout_width="90dp"
         android:layout_height="140dp"
         android:scaleType="fitXY"
-        android:src="@drawable/ic_action_camera_white" />
+        android:src="@drawable/cross_button" />
 
     <ImageView
         android:id="@+id/ivCross"

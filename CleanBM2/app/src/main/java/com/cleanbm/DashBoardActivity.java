@@ -557,6 +557,7 @@ public class DashBoardActivity extends FragmentActivity {
 
                         Log.e(TAG, "Log 2 "+array_bathDetails.size() );
 
+                        // Get all nearest hotel uncomment it.
                         if(array_bathDetails.size()!=0) {
                             getNearestHotel(Gps_lat, Gps_lon);
                         }

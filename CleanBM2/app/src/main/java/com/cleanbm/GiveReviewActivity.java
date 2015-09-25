@@ -232,9 +232,9 @@ public class GiveReviewActivity extends Activity {
             parseObject.put("userName", userName);
             parseObject.put("bathRoomID", bathroom_id);
             parseObject.put("userInfo", ParseUser.getCurrentUser());
-            ParseObject myBathRoomDetailPtr = ParseObject.createWithoutData("BathRoomDetail", parseObject.getObjectId());
-            parseObject.put("bathInfo", myBathRoomDetailPtr);
-          //  parseObject.put("bathRoomLike",Like_unLike);
+            parseObject.put("bathInfo", ParseObject.createWithoutData("BathRoomDetail", bathroom_id));
+
+            //  parseObject.put("bathRoomLike",Like_unLike);
             parseObject.saveInBackground();
 
             Log.e(TAG,rating_value+" "+review_msg+" "+BathRoomtype+"" +user_Id+" "+userName+" "+bathroom_id);
@@ -265,9 +265,10 @@ public class GiveReviewActivity extends Activity {
                         parseObject1.put("userId", user_Id);
                         // Create a column named "ImageFile" and insert the image
                         parseObject1.put("bathroomImage", file);
-                        parseObject1.put("approve", "NO");
+                        parseObject1.put("approve", "YES");
                         parseObject1.put("userInfo", ParseUser.getCurrentUser());
-                        parseObject1.put("bathInfo", myBathRoomDetailPtr);
+                        parseObject.put("bathInfo", ParseObject.createWithoutData("BathRoomDetail", bathroom_id));
+
 
                         // Create the class and the columns
                         parseObject1.saveInBackground();
@@ -286,7 +287,7 @@ public class GiveReviewActivity extends Activity {
         protected void onPostExecute(String s) {
             super.onPostExecute(s);
             setProgress(false);
-            Toast.makeText(getApplicationContext(),"Successfully added and Photos are waiting for approval.",Toast.LENGTH_LONG).show();
+            Toast.makeText(getApplicationContext(),"Successfully added.",Toast.LENGTH_LONG).show();
             edtReviewMsg.setText("");
             rate_BathRoom.setRating(0);
         }
