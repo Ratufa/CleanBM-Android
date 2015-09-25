@@ -231,7 +231,6 @@ public class AddLocation extends Activity {
         {
            String path=(String) data.getExtras().get("data");
             ImagesBean imagesBean = new ImagesBean();
-
             imagesBean.setUri(Uri.fromFile(new File(path)));
             imagesList.add(imagesBean);
             photoAdapter1.notifyDataSetChanged();
