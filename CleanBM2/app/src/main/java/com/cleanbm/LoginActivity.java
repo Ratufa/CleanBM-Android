@@ -47,6 +47,7 @@ public class LoginActivity extends Activity {
 
     AlertDialogManager alert = new AlertDialogManager();
 
+    Boolean fbUser=false;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -75,7 +76,11 @@ public class LoginActivity extends Activity {
 
         txtSkip =(TextView)findViewById(R.id.txtSkip);
         txtSkip.setOnClickListener(mButtonClick);
-        if (isFirstTime()) {
+       String username= ParseUser.getCurrentUser().getUsername();
+        Log.d("LoginActivity"," "+username+" "+fbUser);
+        fbUser = ParseFacebookUtils.isLinked(ParseUser.getCurrentUser());
+        if(username==null && fbUser==false && isFirstTime())
+      /*  if (isFirstTime())*/ {
             // show dialog
             txtSkip.setVisibility(View.VISIBLE);
         }
@@ -124,7 +129,7 @@ public class LoginActivity extends Activity {
                 new AlertDialog.Builder(LoginActivity.this).setTitle(getString(R.string.forgotpass)).setCancelable(true).setView(mEtForgotPassword).setPositiveButton("Reset", mAppidCommitListener).setNegativeButton("Cancel", mAppidCommitListener).show();
             }
             else if(v == txtFbLogin)
-            {
+            { //https://chintankhetiya.wordpress.com/2013/12/26/how-to-create-facebook-hash-key-in-android/
                 if(Utils.isInternetConnected(LoginActivity.this)) {
                     //  setProgress(true);
                     List<String> permissions = Arrays.asList("public_profile", "email");
@@ -141,21 +146,6 @@ public class LoginActivity extends Activity {
                             } else {
                                 Log.d("Message", "User logged in through FB!!");
                                 Toast.makeText(getApplicationContext(), "You are logged in successfully.", Toast.LENGTH_SHORT).show();
-                                if (getIntent().getExtras() != null) {
-                                                   /*String  bath_desc = getIntent().getStringExtra("BathDescription");
-                                                   String bath_type = getIntent().getStringExtra("BathType");
-                                                   float bath_rate = getIntent().getFloatExtra("BathRating",0.0f);
-
-                                                   Log.d("LoginActivity","get intent"+bath_desc+" "+bath_type+" "+bath_rate);
-
-                                                   Log.d("LoginActivity", "  " + (getIntent().getExtras() != null));
-                                                   Intent intent1=new Intent();
-                                                   intent1.putExtra("BathDescription", bath_desc);
-                                                   intent1.putExtra("BathType",bath_type);
-                                                   intent1.putExtra("BathRating",bath_rate);
-                                                   setResult(101, intent1);*/
-                                    finish();
-                                } else {
                                     //   setProgress(false);
 
                                     // Uncomment and access the facebook user detail
@@ -170,9 +160,10 @@ public class LoginActivity extends Activity {
                                                     try {
                                                         //   final ParseUser user = new ParseUser();
                                                         String name = object.getString("name").toString();
+                                                        String email =object.getString("email").toString();
                                                         //String email = object.get;
-                                                        Log.e("Detail", object.getString("name").toString());
-                                                        parseUser.setUsername(name);
+                                                        Log.e("Detail", object.getString("name").toString()+" "+object.getString("email").toString());
+                                                        parseUser.setUsername(email);
                                                         parseUser.put("name",name);
                                                         //parseUser.put("emailVerified",true);
                                                         //  user.setEmail(email);
@@ -194,7 +185,7 @@ public class LoginActivity extends Activity {
                                     request.setParameters(parameters);
                                     request.executeAsync();
                                 }
-                            }
+
                         }
                     });
                 }

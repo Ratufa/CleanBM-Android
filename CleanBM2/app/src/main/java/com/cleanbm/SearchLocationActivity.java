@@ -271,6 +271,7 @@ public class SearchLocationActivity extends FragmentActivity {
                             }
                             else
                             {
+                                alert.showAlertDialog(SearchLocationActivity.this,"Unable to find this location.Please modified your location.");
                                 Log.d(TAG," Show message : User enter the full address!!");
                             }
                 } else {
@@ -704,7 +705,7 @@ public class SearchLocationActivity extends FragmentActivity {
     private static final String TYPE_AUTOCOMPLETE = "/autocomplete";
     private static final String OUT_JSON = "/json";
     //------------ make your specific key ------------
-    private static final String API_KEY = "AIzaSyCdi7F8PV02m13lhPm3gRQEmsEhWHB_iXk";
+    private static final String API_KEY = "AIzaSyCJWHBdeonUF9Gafppf6Ag23NRiUhuuzoE";
     ArrayList<PlacesSuggestionsBean> resultList = null;
     public  ArrayList<PlacesSuggestionsBean> autocomplete(String input) {
 

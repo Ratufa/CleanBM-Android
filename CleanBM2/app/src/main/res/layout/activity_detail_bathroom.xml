@@ -95,7 +95,7 @@
                 <RelativeLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginBottom="5sp"
+
                     android:layout_marginLeft="20sp"
                     android:layout_marginRight="20sp"
                     android:layout_marginTop="5sp"
@@ -121,7 +121,6 @@
                         android:textAppearance="?android:attr/textAppearanceMedium"
                         android:textColor="@color/white"
                         android:textStyle="bold" />
-
                 </RelativeLayout>
 
                 <View
@@ -137,13 +136,13 @@
                     android:background="@color/light_gray"
                     android:orientation="horizontal">
 
-                    <TextView
+            <!--        <TextView
                         android:id="@+id/txt_LeftImgButton"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_gravity="center_vertical"
                         android:layout_margin="5dp"
-                        android:background="@drawable/left_back_icon" />
+                        android:background="@drawable/left_back_icon" />-->
 
                     <com.widgets.HorizontalListView
                         android:id="@+id/hrzListView"
@@ -165,13 +164,13 @@
                         android:gravity="center"
                         android:textColor="@android:color/holo_blue_dark"/>
 
-                    <TextView
+                   <!-- <TextView
                         android:id="@+id/txt_RightImgButton"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_gravity="center_vertical"
                         android:layout_margin="5dp"
-                        android:background="@drawable/right_back_icon" />
+                        android:background="@drawable/right_back_icon" />-->
 
                 </LinearLayout>
 

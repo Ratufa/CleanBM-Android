@@ -835,7 +835,7 @@ public class SearchAdvanceActivity extends FragmentActivity {
     private static final String TYPE_AUTOCOMPLETE = "/autocomplete";
     private static final String OUT_JSON = "/json";
     //------------ make your specific key ------------
-    private static final String API_KEY = "AIzaSyCdi7F8PV02m13lhPm3gRQEmsEhWHB_iXk";
+    private static final String API_KEY = "AIzaSyCJWHBdeonUF9Gafppf6Ag23NRiUhuuzoE";
     ArrayList<PlacesSuggestionsBean> resultList = null;
     public  ArrayList<PlacesSuggestionsBean> autocomplete(String input) {
 

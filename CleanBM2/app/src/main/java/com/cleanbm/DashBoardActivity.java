@@ -15,6 +15,7 @@ import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.Window;
+import android.view.WindowManager;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.widget.AdapterView;
@@ -24,12 +25,16 @@ import android.widget.ListView;
 import android.widget.PopupWindow;
 import android.widget.ProgressBar;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.Utils.Constants;
 import com.Utils.GPSTracker;
 import com.Utils.Utils;
 import com.adapter.PopupMenuAdapter;
 import com.dialog.AlertDialogManager;
+import com.dragmap.CustomMapFragment;
+import com.dragmap.MapWrapperLayout;
+import com.dragmap.TouchableWrapper;
 import com.google.android.gms.ads.AdRequest;
 import com.google.android.gms.ads.AdView;
 import com.google.android.gms.maps.CameraUpdateFactory;
@@ -73,7 +78,8 @@ import java.util.List;
  * This class helpful in showing
  * Nearest bathroom, hotel and restaurant on the google map
  */
-public class DashBoardActivity extends FragmentActivity {
+public class DashBoardActivity extends FragmentActivity //implements TouchableWrapper.UpdateMapAfterUserInterection
+ {
     double added_latitude;
     double added_longitude;
     // LogCat tag
@@ -302,6 +308,11 @@ public class DashBoardActivity extends FragmentActivity {
         return popupWindow;
     }
 
+  /*  @Override
+    public void onUpdateMapAfterUserInterection() {
+        Toast.makeText(getApplicationContext(),"Map move",Toast.LENGTH_SHORT).show();
+    }*/
+
     // On click listener on the Menu option
     public class DropdownOnItemClickListener implements AdapterView.OnItemClickListener {
 
@@ -413,7 +424,6 @@ public class DashBoardActivity extends FragmentActivity {
 
     }
 
-
     public void setUpMarker(double lat, double longg, int i) {
 
         Log.e("Current lat and long", " " + Gps_lat + " " + Gps_lon);
@@ -422,17 +432,19 @@ public class DashBoardActivity extends FragmentActivity {
             final MarkerOptions marker = new MarkerOptions().position(new LatLng(lat, longg)).title(array_bathDetails.get(i).getBath_full_address());
             marker.icon(BitmapDescriptorFactory.fromResource(R.drawable.detail_bathroom_icon));
             mMap.addMarker(marker);
-           // mMap.setOnInfoWindowClickListener(MarkerrrClickListener);
-            mMap.setOnMarkerClickListener(new GoogleMap.OnMarkerClickListener() {
+            mMap.setOnInfoWindowClickListener(MarkerrrClickListener);
+         /*   mMap.setOnMarkerClickListener(new GoogleMap.OnMarkerClickListener() {
                 @Override
                 public boolean onMarkerClick(Marker marker) {
                     final BathRoomDetail details = GetDisplayUser(marker.getTitle());
                     Log.d(TAG, " marker " + marker.getTitle());
                     final String address = details.getBath_full_address();
                     Log.d(TAG, " " + address);
+
                     final Dialog dialog = new Dialog(DashBoardActivity.this);
                     dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
                     dialog.setContentView(R.layout.map_info_window);
+                    dialog.getWindow().clearFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND);
                     ImageView img_report = (ImageView) dialog.findViewById(R.id.img_inappropriate_bathroom);
                     TextView txtMapTitle = (TextView) dialog.findViewById(R.id.txtMapTitle);
                     View view = dialog.findViewById(R.id.viewLine);
@@ -473,6 +485,10 @@ public class DashBoardActivity extends FragmentActivity {
                     }
                     else
                     {
+                    //    final Dialog dialog = new Dialog(DashBoardActivity.this);
+                        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
+                        dialog.setContentView(R.layout.map_info_window);
+                        dialog.getWindow().clearFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND);
                         img_report.setVisibility(View.GONE);
                         view.setVisibility(View.GONE);
                         final SearchHotel hotel_details = GetHotelDetail(marker.getTitle());
@@ -499,10 +515,11 @@ public class DashBoardActivity extends FragmentActivity {
                     dialog.show();
                     return true;
                 }
-            });
+            });*/
            // mMap.setInfoWindowAdapter(infoWindowAdapter);
         }
     }
+
 
     // http://wptrafficanalyzer.in/blog/customizing-infowindow-contents-in-google-map-android-api-v2-using-infowindowadapter/
     GoogleMap.InfoWindowAdapter infoWindowAdapter = new GoogleMap.InfoWindowAdapter() {
@@ -589,77 +606,8 @@ public class DashBoardActivity extends FragmentActivity {
     private GoogleMap.OnInfoWindowClickListener MarkerrrClickListener = new GoogleMap.OnInfoWindowClickListener() {
         @Override
         public void onInfoWindowClick(Marker marker) {
-            final BathRoomDetail details = GetDisplayUser(marker.getTitle());
-            Log.d(TAG, " marker " + marker.getTitle());
-            final String address = details.getBath_full_address();
-            Log.d(TAG, " " + address);
-            final Dialog dialog = new Dialog(DashBoardActivity.this);
-            dialog.setContentView(R.layout.map_info_window);
-            ImageView img_report = (ImageView) dialog.findViewById(R.id.img_inappropriate_bathroom);
-            TextView txtMapTitle = (TextView) dialog.findViewById(R.id.txtMapTitle);
-            View view = dialog.findViewById(R.id.viewLine);
-            if (array_bathDetails.contains(details)) {
-                txtMapTitle.setText(address);
-                txtMapTitle.setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-                        Intent intent = new Intent(getApplicationContext(), DetailBathRoomActivity.class);
-                        intent.putExtra("DATA", details);
-                        startActivity(intent);
-                    }
-                });
-                img_report.setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-                        AlertDialog.Builder alertDialog = new AlertDialog.Builder(
-                                DashBoardActivity.this);
-                        alertDialog.setMessage("Report as inappropriate?");
-                        alertDialog.setPositiveButton("YES", new DialogInterface.OnClickListener() {
-                            @Override
-                            public void onClick(DialogInterface dialog, int which) {
 
-                            }
-                        });
-                        alertDialog.setNegativeButton("NO",
-                                new DialogInterface.OnClickListener() {
-                                    public void onClick(DialogInterface dialog, int which) {
-                                        // Write your code here to invoke NO event
-                                        dialog.cancel();
-                                    }
-                                });
-                        // Showing Alert Message
-                        alertDialog.show();
-                    }
-                });
-
-            }
-            else
-            {
-                img_report.setVisibility(View.GONE);
-                view.setVisibility(View.GONE);
-                final SearchHotel hotel_details = GetHotelDetail(marker.getTitle());
-                final String address_hotel =hotel_details.getAddress();
-                Log.d(TAG," hotel address"+address_hotel);
-                txtMapTitle.setText(address_hotel);
-                txtMapTitle.setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-
-                        double lat = hotel_details.getLat();
-                        double lng = hotel_details.getLongg();
-                        Log.d("Lat lng"," "+lat+" "+lng);
-                        Intent intent = new Intent(getApplicationContext(), AddLocation.class);
-                        Bundle bundle = new Bundle();
-                        bundle.putDouble("Latitude", lat);
-                        bundle.putDouble("Longitude",lng);
-                        bundle.putString("Address", address);
-                        intent.putExtras(bundle);
-                        startActivity(intent);
-                    }
-                });
-            }
-            dialog.show();
-          /*  BathRoomDetail details = GetDisplayUser(marker.getTitle());
+           BathRoomDetail details = GetDisplayUser(marker.getTitle());
             String address = details.getBath_full_address();
             String tag= details.getTag();
             Log.e(TAG," "+tag);
@@ -682,7 +630,7 @@ public class DashBoardActivity extends FragmentActivity {
                 bundle.putString("Address", marker.getTitle());
                 intent.putExtras(bundle);
                 startActivity(intent);
-            }*/
+            }
         }
 
     };
@@ -720,10 +668,20 @@ public class DashBoardActivity extends FragmentActivity {
 
     private void setUpMapIfNeeded(final double latitude, final double longitude, int zoomLevel) {
         // Do a null check to confirm that we have not already instantiated the map.
+      /*  CustomMapFragment customMapFragment = ((CustomMapFragment) getSupportFragmentManager().findFragmentById(R.id.map));
+        customMapFragment.setOnDragListener(new MapWrapperLayout.OnDragListener() {
+            @Override
+            public void onDrag(MotionEvent motionEvent) {
+                Log.d("ON_DRAG", String.format("ME: %s", motionEvent));
+                // Handle motion event:
+            }
+        });
+        mMap = customMapFragment.getMap();*/
         if (mMap == null) {
             // Try to obtain the map from the SupportMapFragment.
             mMap = ((SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.map)).getMap();
         }
+
 
         mMap.setMyLocationEnabled(true);
         mMap.getUiSettings().setMyLocationButtonEnabled(true);
@@ -1121,7 +1079,7 @@ int out=0;
                     Log.d(TAG, "Add marker after" + (mMap == null));
                  }
             }
-                   // mMap.setOnInfoWindowClickListener(MarkerrrClickListener);
+                    mMap.setOnInfoWindowClickListener(MarkerrrClickListener);
         }
     }
 

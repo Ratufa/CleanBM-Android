@@ -95,7 +95,7 @@ public class DetailBathRoomActivity extends FragmentActivity implements SwipeMen
     private int reportCount = 0;
     private int reviewLike = 0;
     private ReviewAdapter reviewAdapter;
-    TextView txt_LeftImgButton,txt_RightImgButton;
+ //   TextView txt_LeftImgButton,txt_RightImgButton;
     PopupMenuAdapter adapter;
     PopupWindow popupWindow;
 
@@ -227,10 +227,10 @@ public class DetailBathRoomActivity extends FragmentActivity implements SwipeMen
             finish();
         }
 
-        txt_RightImgButton = (TextView)findViewById(R.id.txt_RightImgButton);
+      /*  txt_RightImgButton = (TextView)findViewById(R.id.txt_RightImgButton);
         txt_LeftImgButton =(TextView)findViewById(R.id.txt_LeftImgButton);
         txt_RightImgButton.setOnClickListener(mImageMoveListener);
-        txt_LeftImgButton.setOnClickListener(mImageMoveListener);
+        txt_LeftImgButton.setOnClickListener(mImageMoveListener);*/
 
         txtBathAddress = (TextView) findViewById(R.id.txtBathAddress);
 
@@ -404,7 +404,7 @@ public class DetailBathRoomActivity extends FragmentActivity implements SwipeMen
     }
 
 
-    View.OnClickListener mImageMoveListener = new View.OnClickListener() {
+/*    View.OnClickListener mImageMoveListener = new View.OnClickListener() {
         @Override
         public void onClick(View v) {
             if(v== txt_LeftImgButton)
@@ -416,7 +416,7 @@ public class DetailBathRoomActivity extends FragmentActivity implements SwipeMen
 
             }
         }
-    };
+    };*/
 
     @Override
     protected void onResume() {

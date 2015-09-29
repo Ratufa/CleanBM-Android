@@ -250,21 +250,24 @@ public class GiveReviewActivity extends Activity {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        if(requestCode==CAPTURE_IMAGE_ACTIVITY_REQUEST_CODE)
-        {
-            Bitmap photo = (Bitmap) data.getExtras().get("data");
-            ByteArrayOutputStream bytes = new ByteArrayOutputStream();
-            photo.compress(Bitmap.CompressFormat.JPEG, 100, bytes);
-            String path = MediaStore.Images.Media.insertImage(GiveReviewActivity.this.getContentResolver(), photo, "Title", null);
-            Uri img_uri=Uri.parse(path);
-            Log.d(TAG," img uri from cam"+path);
-            //String path=(String) data.getExtras().get("data");
-            ImagesBean imagesBean = new ImagesBean();
-            imagesBean.setUri(img_uri);
-            imagesList.add(imagesBean);
-            photoAdapter1 = new PhotoAdapter1();
-            hrzListView.setAdapter(photoAdapter1);
-            photoAdapter1.notifyDataSetChanged();
+        if(resultCode==RESULT_OK) {
+            if (requestCode == CAPTURE_IMAGE_ACTIVITY_REQUEST_CODE) {
+                if (data != null) {
+                    Bitmap photo = (Bitmap) data.getExtras().get("data");
+                    ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+                    photo.compress(Bitmap.CompressFormat.JPEG, 100, bytes);
+                    String path = MediaStore.Images.Media.insertImage(GiveReviewActivity.this.getContentResolver(), photo, "Title", null);
+                    Uri img_uri = Uri.parse(path);
+                    Log.d(TAG, " img uri from cam" + path);
+                    //String path=(String) data.getExtras().get("data");
+                    ImagesBean imagesBean = new ImagesBean();
+                    imagesBean.setUri(img_uri);
+                    imagesList.add(imagesBean);
+                    photoAdapter1 = new PhotoAdapter1();
+                    hrzListView.setAdapter(photoAdapter1);
+                    photoAdapter1.notifyDataSetChanged();
+                }
+            }
         }
     }
     private PhotoAdapter1 photoAdapter1;
