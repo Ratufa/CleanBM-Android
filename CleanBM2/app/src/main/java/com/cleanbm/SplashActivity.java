@@ -12,6 +12,7 @@ import android.view.MenuItem;
 import android.view.Window;
 import android.widget.LinearLayout;
 
+import com.parse.ParseFacebookUtils;
 import com.parse.ParseUser;
 
 
@@ -20,6 +21,8 @@ public class SplashActivity extends BaseActivityy {
     // Splash screen timer
     private static  int SPLASH_TIME_OUT = 3000;
     LinearLayout splash_Screen;
+    private boolean fbUser = false;
+    String TAG ="SplashActivity";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -65,18 +68,27 @@ public class SplashActivity extends BaseActivityy {
                     // This method will be executed once the timer is over
                     // Start your app main activity
                     ParseUser curreUser = ParseUser.getCurrentUser();
-                    Boolean email_verify = curreUser.getBoolean("emailVerified");
-                    Log.d("Splash screen "," "+email_verify);
-                    if(curreUser.getUsername()==null || email_verify==false) {
-                        Intent in = new Intent(getApplicationContext(), LoginActivity.class);
-                        startActivity(in);
-                        finish();
-                    }
-                    else
+                    fbUser = ParseFacebookUtils.isLinked(ParseUser.getCurrentUser());
+                    Log.d(TAG,"fb"+fbUser);
+                    if(fbUser)
                     {
+                        Log.d(TAG,"Login with fb"+fbUser);
                         Intent in = new Intent(getApplicationContext(), SearchLocationActivity.class);
                         startActivity(in);
                         finish();
+                    }
+                    else {
+                        Boolean email_verify = curreUser.getBoolean("emailVerified");
+                        Log.d("Splash screen ", " " + email_verify);
+                        if (curreUser.getUsername() == null || email_verify == false) {
+                            Intent in = new Intent(getApplicationContext(), LoginActivity.class);
+                            startActivity(in);
+                            finish();
+                        } else {
+                            Intent in = new Intent(getApplicationContext(), SearchLocationActivity.class);
+                            startActivity(in);
+                            finish();
+                        }
                     }
                 }
                 // close this activity

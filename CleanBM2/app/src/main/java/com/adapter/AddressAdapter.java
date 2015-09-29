@@ -16,7 +16,7 @@ import java.util.ArrayList;
  * Created by Ratufa.Paridhi on 9/4/2015.
  *  Address
  */
-public class AddressAdapter extends ArrayAdapter<AddressBean> {
+public class AddressAdapter extends ArrayAdapter<AddressBean>  {
 
     ArrayList<AddressBean> arrayList;
 

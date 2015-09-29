@@ -19,6 +19,7 @@ import android.util.DisplayMetrics;
 import android.util.Log;
 import android.util.TypedValue;
 import android.view.LayoutInflater;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.animation.Animation;
@@ -54,6 +55,7 @@ import com.koushikdutta.ion.Ion;
 import com.parse.FindCallback;
 import com.parse.GetCallback;
 import com.parse.ParseException;
+import com.parse.ParseFacebookUtils;
 import com.parse.ParseFile;
 import com.parse.ParseGeoPoint;
 import com.parse.ParseObject;
@@ -74,6 +76,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.logging.Handler;
 
 /**
  * Created by Ratufa.Paridhi on 8/19/2015.
@@ -200,9 +203,7 @@ public class DetailBathRoomActivity extends FragmentActivity implements SwipeMen
         }
     };
 
-    private LayoutInflater vi;
-    private View v;
-    private ImageView singleImage, img_navigation_icon;
+    private ImageView  img_navigation_icon;
     private GoogleMap mMap;
     private ImageView img_Menu;
     private ProgressDialog pd;
@@ -283,17 +284,11 @@ public class DetailBathRoomActivity extends FragmentActivity implements SwipeMen
                     Bundle bundle = new Bundle();
                     bundle.putString("bath_id", bathroom_id);
                     in.putExtras(bundle);
-                    startActivity(in);
+                    startActivityForResult(in, 102);
                 } else {
                     AlertDialog.Builder alertDialog = new AlertDialog.Builder(
                             DetailBathRoomActivity.this);
-                    // Setting Dialog Title
-                    //  alertDialog.setTitle("Leave application?");
-                    // Setting Dialog Message
                     alertDialog.setMessage(getResources().getString(R.string.login_first_message));
-                    // Setting Icon to Dialog
-                    //alertDialog.setIcon(R.drawable.dialog_icon);
-                    // Setting Positive "Yes" Button
                     alertDialog.setPositiveButton("Login",
                             new DialogInterface.OnClickListener() {
                                 public void onClick(DialogInterface dialog, int which) {
@@ -366,7 +361,7 @@ public class DetailBathRoomActivity extends FragmentActivity implements SwipeMen
             public void done(List<ParseObject> list, ParseException e) {
 
                        // horizontalGalleryView.removeAllViews();
-
+                arrayList_bathroomImg.clear();
                 for (ParseObject parseObject : list) {
                     ParseFile postImage = parseObject.getParseFile("bathroomImage");
                     bathroom_img_id = parseObject.getObjectId();
@@ -645,7 +640,6 @@ public class DetailBathRoomActivity extends FragmentActivity implements SwipeMen
         });
     }
 
-
     @Override
     public boolean onMenuItemClick(int position, SwipeMenu menu, int index) {
         ParseUser currentUser = ParseUser.getCurrentUser();
@@ -848,12 +842,9 @@ public class DetailBathRoomActivity extends FragmentActivity implements SwipeMen
                     AlertDialog.Builder alertDialog = new AlertDialog.Builder(
                             DetailBathRoomActivity
                                     .this);
-                    // Setting Dialog Title
-                    //  alertDialog.setTitle("Leave application?");
                     // Setting Dialog Message
                     alertDialog.setMessage(getResources().getString(R.string.login_first_message));
                     // Setting Icon to Dialog
-                    //alertDialog.setIcon(R.drawable.dialog_icon);
                     // Setting Positive "Yes" Button
                     alertDialog.setPositiveButton("Login",
                             new DialogInterface.OnClickListener() {
@@ -933,6 +924,7 @@ public class DetailBathRoomActivity extends FragmentActivity implements SwipeMen
         }
     };
 
+    Boolean fbUser=false;
     public PopupWindow showMenu() {
         //Initialize a pop up window type
         LayoutInflater inflater = (LayoutInflater) DetailBathRoomActivity.this.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
@@ -942,8 +934,9 @@ public class DetailBathRoomActivity extends FragmentActivity implements SwipeMen
         ParseUser currentUser = ParseUser.getCurrentUser();
         Popup_Menu_Item menus[]; // = new Popup_Menu_Item[5];
         Boolean email_verify = currentUser.getBoolean("emailVerified");
+        fbUser = ParseFacebookUtils.isLinked(ParseUser.getCurrentUser());
         Log.d("Splash screen "," "+email_verify);
-        if (currentUser.getUsername() != null && email_verify==true) {
+        if ((currentUser.getUsername() != null && email_verify==true) || fbUser) {
             menus = new Popup_Menu_Item[]{
                     new Popup_Menu_Item(R.drawable.home_icon, getResources().getString(R.string.Home)),
                     new Popup_Menu_Item(R.drawable.location_icon, getResources().getString(R.string.search_near_me)),
@@ -1029,6 +1022,8 @@ public class DetailBathRoomActivity extends FragmentActivity implements SwipeMen
 
             Log.e("Tag", data);
             if (data.equals(getString(R.string.Home))) {
+                Intent intent = new Intent(getApplicationContext(),SearchLocationActivity.class);
+                intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
                 finish();
             } else if (data.equals(getString(R.string.search_near_me))) {
                 if (Utils.isInternetConnected(DetailBathRoomActivity.this)) {
@@ -1097,8 +1092,8 @@ public class DetailBathRoomActivity extends FragmentActivity implements SwipeMen
             } else if (data.equals(getResources().getString(R.string.Login_menu))) {
                 //   flag_for_login = 1;
                 Intent in = new Intent(getApplicationContext(), LoginActivity.class);
+                in.putExtra("BathDescription", "");
                 startActivity(in);
-                finish();
             }
         }
 
@@ -1160,4 +1155,22 @@ public class DetailBathRoomActivity extends FragmentActivity implements SwipeMen
         }
     }
 
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        Log.d(TAG," result code"+resultCode);
+        if(resultCode==RESULT_OK)
+        {
+            Log.d(TAG," result code"+requestCode);
+            if(requestCode==102)
+            {
+                String message=data.getStringExtra("MESSAGE");
+                Log.d(TAG," message"+message);
+                if(message.equalsIgnoreCase("YES")) {
+                    Log.d(TAG," Show bath room");
+                    new GetBathRoomImages().execute();
+                }
+            }
+        }
+    }
 }

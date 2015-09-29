@@ -11,6 +11,7 @@ import android.os.Bundle;
 import android.support.v4.app.FragmentActivity;
 import android.telephony.TelephonyManager;
 import android.util.Log;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
@@ -44,10 +45,13 @@ import com.javabeans.Popup_Menu_Item;
 import com.javabeans.SearchHotel;
 import com.parse.FindCallback;
 import com.parse.ParseException;
+import com.parse.ParseFacebookUtils;
 import com.parse.ParseGeoPoint;
 import com.parse.ParseObject;
 import com.parse.ParseQuery;
 import com.parse.ParseUser;
+
+import net.yazeed44.imagepicker.util.Util;
 
 import org.json.JSONObject;
 
@@ -238,7 +242,7 @@ public class DashBoardActivity extends FragmentActivity {
             }
         });
     }
-
+    private boolean fbUser = false;
     public PopupWindow showMenu() {
         //Initialize a pop up window type
         LinearLayout layoutt = new LinearLayout(this);
@@ -247,8 +251,9 @@ public class DashBoardActivity extends FragmentActivity {
         ParseUser currentUser = ParseUser.getCurrentUser();
         Popup_Menu_Item menus[];
         Boolean email_verify = currentUser.getBoolean("emailVerified");
-        Log.d("Splash screen ", " " + email_verify);
-        if (currentUser.getUsername() != null && email_verify == true) {
+        fbUser = ParseFacebookUtils.isLinked(ParseUser.getCurrentUser());
+        Log.d("Splash screen "," "+email_verify);
+        if ((currentUser.getUsername() != null && email_verify==true) || fbUser){
             menus = new Popup_Menu_Item[]{
                     new Popup_Menu_Item(R.drawable.home_icon, getResources().getString(R.string.Home)),
                     new Popup_Menu_Item(R.drawable.location_icon, getResources().getString(R.string.search_near_me)),
@@ -412,21 +417,102 @@ public class DashBoardActivity extends FragmentActivity {
         Log.e("Current lat and long", " " + Gps_lat + " " + Gps_lon);
 
         if (array_bathDetails.size() != 0) {
-            MarkerOptions marker = new MarkerOptions().position(new LatLng(lat, longg)).title(array_bathDetails.get(i).getBath_full_address());
+            final MarkerOptions marker = new MarkerOptions().position(new LatLng(lat, longg)).title(array_bathDetails.get(i).getBath_full_address());
             marker.icon(BitmapDescriptorFactory.fromResource(R.drawable.detail_bathroom_icon));
-
             mMap.addMarker(marker);
             mMap.setOnInfoWindowClickListener(MarkerrrClickListener);
+          //  mMap.setInfoWindowAdapter(infoWindowAdapter);
+        }
+    }
+
+    // http://wptrafficanalyzer.in/blog/customizing-infowindow-contents-in-google-map-android-api-v2-using-infowindowadapter/
+    GoogleMap.InfoWindowAdapter infoWindowAdapter = new GoogleMap.InfoWindowAdapter() {
+        @Override
+        public View getInfoWindow(Marker marker) {
+            return null;
         }
 
-    }
+        @Override
+        public View getInfoContents(Marker marker) {
+           final BathRoomDetail details = GetDisplayUser(marker.getTitle());
+            Log.d(TAG, " marker " + marker.getTitle());
+            final String address = details.getBath_full_address();
+            Log.d(TAG, " " + address);
+            View v = getLayoutInflater().inflate(R.layout.map_info_window, null);
+            ImageView img_report = (ImageView) v.findViewById(R.id.img_inappropriate_bathroom);
+            TextView txtMapTitle = (TextView) v.findViewById(R.id.txtMapTitle);
+            View view = v.findViewById(R.id.viewLine);
+            // Getting view from the layout file info_window_layout+
+            if (array_bathDetails.contains(details)) {
+                txtMapTitle.setText(address);
+                txtMapTitle.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        Intent intent = new Intent(getApplicationContext(), DetailBathRoomActivity.class);
+                        intent.putExtra("DATA", details);
+                        startActivity(intent);
+                    }
+                });
+                img_report.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        AlertDialog.Builder alertDialog = new AlertDialog.Builder(
+                                DashBoardActivity.this);
+                        alertDialog.setMessage("Report as inappropriate?");
+                        alertDialog.setPositiveButton("YES", new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+
+                            }
+                        });
+                        alertDialog.setNegativeButton("NO",
+                                new DialogInterface.OnClickListener() {
+                                    public void onClick(DialogInterface dialog, int which) {
+                                        // Write your code here to invoke NO event
+                                        dialog.cancel();
+                                    }
+                                });
+                        // Showing Alert Message
+                        alertDialog.show();
+                    }
+                });
+
+        }
+            else
+            {
+                img_report.setVisibility(View.GONE);
+                view.setVisibility(View.GONE);
+                final SearchHotel hotel_details = GetHotelDetail(marker.getTitle());
+                final String address_hotel =hotel_details.getAddress();
+                Log.d(TAG," hotel address"+address_hotel);
+                txtMapTitle.setText(address_hotel);
+                txtMapTitle.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+
+                        double lat = hotel_details.getLat();
+                        double lng = hotel_details.getLongg();
+                        Log.d("Lat lng"," "+lat+" "+lng);
+                        Intent intent = new Intent(getApplicationContext(), AddLocation.class);
+                        Bundle bundle = new Bundle();
+                        bundle.putDouble("Latitude", lat);
+                        bundle.putDouble("Longitude",lng);
+                        bundle.putString("Address", address);
+                        intent.putExtras(bundle);
+                        startActivity(intent);
+                    }
+                });
+            }
+            return v;
+        }
+    };
 
     private GoogleMap.OnInfoWindowClickListener MarkerrrClickListener = new GoogleMap.OnInfoWindowClickListener() {
         @Override
         public void onInfoWindowClick(Marker marker) {
             BathRoomDetail details = GetDisplayUser(marker.getTitle());
             String address = details.getBath_full_address();
-           String tag= details.getTag();
+            String tag= details.getTag();
             Log.e(TAG," "+tag);
             if(array_bathDetails.contains(details)) {
 
@@ -796,7 +882,11 @@ int out=0;
     private class ParserTask extends AsyncTask<String, Integer, List<HashMap<String, String>>> {
 
         JSONObject jObject;
-
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+//            Utils.setProgress(DashBoardActivity.this,true);
+        }
         // Invoked by execute() method of this object
         @Override
         protected List<HashMap<String, String>> doInBackground(String... jsonData) {
@@ -823,6 +913,7 @@ int out=0;
             // Clears all the existing markers
             // mMap.clear();
           //  array_Hotel.clear();
+//            Utils.setProgress(DashBoardActivity.this,false);
 
             for (int i = 0; i < list.size(); i++) {
 
@@ -881,7 +972,7 @@ int out=0;
                     Log.d(TAG, "Add marker after" + (mMap == null));
                  }
             }
-                    mMap.setOnInfoWindowClickListener(MarkerrrClickListener);
+                   // mMap.setOnInfoWindowClickListener(MarkerrrClickListener);
         }
     }
 

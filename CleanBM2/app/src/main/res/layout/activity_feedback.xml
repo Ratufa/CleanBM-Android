@@ -154,6 +154,8 @@
 
             </LinearLayout>
 
+
+
             <View
                 android:layout_width="match_parent"
                 android:layout_height="1sp"
@@ -162,6 +164,57 @@
                 android:layout_marginRight="20sp"
                 android:background="@drawable/detail_line"
                 />
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal"
+                android:layout_marginBottom="5dp"
+                android:layout_marginLeft="20sp"
+                android:layout_marginRight="20sp"
+                android:layout_marginTop="20sp"
+                android:gravity="center"
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/txtBth"
+                    android:textSize="15sp"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:clickable="true"
+                    android:text="Bathroom Best for :"
+                    android:textColor="@color/black" />
+
+                <RadioGroup
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:orientation="horizontal"
+                    android:gravity="center"
+                    android:id="@+id/radiogrpBestFor"
+                    >
+
+                    <RadioButton
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Male"
+                        android:id="@+id/radioMale"
+                        />
+
+                    <RadioButton
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Female"
+                        android:layout_marginLeft="5dp"
+                        android:id="@+id/radioFemale" />
+
+                    <RadioButton
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Both"
+                        android:checked="true"
+                        android:layout_marginLeft="5dp"
+                        android:id="@+id/radioBoth" />
+                </RadioGroup>
+            </LinearLayout>
 
             <LinearLayout
                 android:layout_width="wrap_content"

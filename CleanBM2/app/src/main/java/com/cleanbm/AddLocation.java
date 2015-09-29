@@ -40,6 +40,7 @@ import com.dialog.AlertDialogManager;
 import com.javabeans.ImagesBean;
 import com.javabeans.Popup_Menu_Item;
 import com.parse.GetCallback;
+import com.parse.ParseFacebookUtils;
 import com.parse.ParseFile;
 import com.parse.ParseGeoPoint;
 import com.parse.ParseObject;
@@ -63,13 +64,13 @@ import java.util.ArrayList;
  */
 public class AddLocation extends Activity {
     private RatingBar rate_BathRoom;
-    private RadioGroup radioGroup;
+    private RadioGroup radioGroup,radioGrpBestBathroom;
     private EditText edtBathRoomDescrip;
     private ScrollView scrollView;
     private TextView txtAddThisLocation;
     private ImageView ImageView_photo;
     private String rating_value, userName;
-    private String BathRoomtype = "Squat", user_Id, BathRoomDescription;
+    private String BathRoomtype = "Squat", user_Id, BathRoomDescription, bathroom_best_for="Both";
     private String TAG = "AddNewLocation";
     int imageCount = 1;
     private float rating;
@@ -83,8 +84,9 @@ public class AddLocation extends Activity {
     PopupMenuAdapter adapter;
     PopupWindow popupWindow;
     private AlertDialogManager alert = new AlertDialogManager();
-    private PhotoAdapter1 photoAdapter1;
+  //  private PhotoAdapter1 photoAdapter1;
     int CAPTURE_IMAGE_ACTIVITY_REQUEST_CODE=101;
+    PhotoAdapter1 photoAdapter1 ;
 
     /*
         When we press on Backbutton icon or back button, it finish the current activity
@@ -179,19 +181,8 @@ public class AddLocation extends Activity {
                     TO select multiple images for upload.
                     Library used to select multiple Images.
                 */
-               /* new Picker.Builder(AddLocation.this, new MyPickListener(), R.style.MIP_theme)
-                        .setPickMode(Picker.PickMode.MULTIPLE_IMAGES)
-                        .setLimit(10)
-                        .build()
-                        .startActivity();*/
-
                 selectImage();
-
-               /* new Picker.Builder(AddLocation.this,new MyPickListener(),R.style.MIP_theme)
-                        .setPickMode(Picker.PickMode.MULTIPLE_IMAGES)
-                        .setLimit(10)
-                        .build()
-                        .startActivity();*/
+                //https://github.com/yazeed44/MultiImagePicker
             }
         }
     };
@@ -229,10 +220,18 @@ public class AddLocation extends Activity {
         super.onActivityResult(requestCode, resultCode, data);
         if(requestCode==CAPTURE_IMAGE_ACTIVITY_REQUEST_CODE)
         {
-           String path=(String) data.getExtras().get("data");
+            Bitmap photo = (Bitmap) data.getExtras().get("data");
+            ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+            photo.compress(Bitmap.CompressFormat.JPEG, 100, bytes);
+            String path = MediaStore.Images.Media.insertImage(AddLocation.this.getContentResolver(), photo, "Title", null);
+            Uri img_uri=Uri.parse(path);
+            Log.d(TAG," img uri from cam"+path);
+            //String path=(String) data.getExtras().get("data");
             ImagesBean imagesBean = new ImagesBean();
-            imagesBean.setUri(Uri.fromFile(new File(path)));
+            imagesBean.setUri(img_uri);
             imagesList.add(imagesBean);
+            photoAdapter1 = new PhotoAdapter1();
+            hrzListView.setAdapter(photoAdapter1);
             photoAdapter1.notifyDataSetChanged();
         }
     }
@@ -250,6 +249,7 @@ public class AddLocation extends Activity {
             // PhotoAdapter is custom adapter for showing images on the Horizontal listview.
             photoAdapter1 = new PhotoAdapter1();
             hrzListView.setAdapter(photoAdapter1);
+            photoAdapter1.notifyDataSetChanged();
         }
 
         @Override
@@ -351,6 +351,27 @@ public class AddLocation extends Activity {
         });
 
         /*
+            Choose bathroom best for option.
+       */
+        radioGrpBestBathroom = (RadioGroup)findViewById(R.id.radiogrpBestFor);
+        radioGrpBestBathroom.setOnCheckedChangeListener(new RadioGroup.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(RadioGroup group, int checkedId) {
+                if(checkedId==R.id.radioMale)
+                {
+                    bathroom_best_for="Male";
+                }
+                else if(checkedId==R.id.radioFemale)
+                {
+                    bathroom_best_for="Female";
+                }
+                else if(checkedId==R.id.radioBoth)
+                {
+                    bathroom_best_for="Both";
+                }
+            }
+        });
+         /*
             setting the id of bathroom description edit text
             and after enter bathroom description,keyboard hide.
         */
@@ -422,6 +443,7 @@ public class AddLocation extends Activity {
             Showing the pop up menu.
 
      */
+     private boolean fbUser = false;
     public PopupWindow showMenu() {
         //Initialize a pop up window type
        LinearLayout layoutt = new LinearLayout(this);
@@ -436,7 +458,9 @@ public class AddLocation extends Activity {
             If User is verify and successfully login
             then If block will be run and showing "Logout" option.
         */
-        if (currentUser.getUsername() != null && email_verify==true) {
+        fbUser = ParseFacebookUtils.isLinked(ParseUser.getCurrentUser());
+        Log.d("Splash screen "," "+email_verify);
+        if ((currentUser.getUsername() != null && email_verify==true) || fbUser){
             menus = new Popup_Menu_Item[]{
                     new Popup_Menu_Item(R.drawable.home_icon, getResources().getString(R.string.Home)),
                     new Popup_Menu_Item(R.drawable.location_icon, getResources().getString(R.string.search_near_me)),
@@ -635,6 +659,7 @@ public class AddLocation extends Activity {
             parseObject.put("bathLocation", point);
             parseObject.put("userId", user_Id);
             parseObject.put("userInfo", ParseUser.getCurrentUser());
+            parseObject.put("genderType",bathroom_best_for);
           //  Log.d(TAG, " Before Parse full address" + full_address);
             parseObject.put("bathFullAddress", params[0]);
             parseObject.put("approve", "YES");
@@ -655,6 +680,7 @@ public class AddLocation extends Activity {
                         parseObject1.put("bathRating", rating);
                         parseObject1.put("bathRoomType", BathRoomtype);
                         parseObject1.put("userName", userName);
+                        parseObject1.put("genderType",bathroom_best_for);
                         parseObject1.put("userInfo", ParseUser.getCurrentUser());
                         parseObject1.put("bathInfo", ParseObject.createWithoutData("BathRoomDetail", bath_room_id));
 

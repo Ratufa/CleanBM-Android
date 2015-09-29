@@ -174,12 +174,14 @@ public class LoginActivity extends Activity {
                                                         Log.e("Detail", object.getString("name").toString());
                                                         parseUser.setUsername(name);
                                                         parseUser.put("name",name);
+                                                        //parseUser.put("emailVerified",true);
                                                         //  user.setEmail(email);
                                                         //user.put("name", name);
                                                         parseUser.saveInBackground();
-                                                        Intent in = new Intent(getApplicationContext(), SearchLocationActivity.class);
-                                                         startActivity(in);
-                                                        finish();
+                                                            Intent in = new Intent(getApplicationContext(), SearchLocationActivity.class);
+                                                            in.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+                                                            startActivity(in);
+                                                            finish();
                                                     } catch (JSONException e1) {
                                                         e1.printStackTrace();
                                                     }
@@ -270,19 +272,6 @@ public class LoginActivity extends Activity {
     public void onLoginClick()
     {
 
-
-      /*  if(edtEmail.getText().toString().trim().length() <=0)
-        {
-            alert.showAlertDialog(this,getResources().getString(R.string.enter_email));
-        }
-        else if(edtPassword.getText().toString().trim().length() <=0 || edtPassword.getText().toString().trim().length() <4)
-        {
-            alert.showAlertDialog(this,getResources().getString(R.string.enter_password));
-        }else if (!Utils.isValidEmailAddress(edtEmail.getText().toString())) {
-            alert.showAlertDialog(this, getResources().getString(R.string.enter_email));
-        }
-        else
-        {*/
             email = edtEmail.getText().toString();
             password = edtPassword.getText().toString();
           //  final  ParseUser user = new ParseUser();
@@ -303,7 +292,7 @@ public class LoginActivity extends Activity {
                     @Override
                     protected void onPreExecute() {
                         super.onPreExecute();
-                        setProgress(true);
+                        Utils.setProgress(LoginActivity.this,true);
                     }
 
                     @Override
@@ -321,7 +310,6 @@ public class LoginActivity extends Activity {
                                                 Toast.makeText(getApplicationContext(), "You are logged in successfully.", Toast.LENGTH_SHORT).show();
                                                 // edtEmail.setText("");
                                                 // edtPassword.setText("");
-                                                setProgress(false);
 
                                                 if (getIntent().getExtras() != null) {
                                                    /*String  bath_desc = getIntent().getStringExtra("BathDescription");
@@ -363,7 +351,7 @@ public class LoginActivity extends Activity {
                     @Override
                     protected void onPostExecute(Void aVoid) {
                         super.onPostExecute(aVoid);
-                        setProgress(false);
+                     Utils.setProgress(LoginActivity.this,false);
                     }
                 }.execute();
 
@@ -376,35 +364,6 @@ public class LoginActivity extends Activity {
      //   }
     }
 
-    public void setProgress(boolean visibility) {
-        if (visibility) {
-            try {
-                if (pd == null) {
-                    pd = new ProgressDialog(getApplicationContext());
-                    pd.setTitle("");
-                    pd.setMessage(getString(R.string.loading));
-                    pd.setCancelable(true);
-                    if (!pd.isShowing())
-                        pd.show();
-                } else {
-                    if (!pd.isShowing())
-                        pd.show();
-                }
-            } catch (Exception e) {
-                Utils.sendExceptionReport(e, getApplicationContext());
-                e.printStackTrace();
-            }
-        } else {
-            try {
-
-                if (pd.isShowing())
-                    pd.dismiss();
-            } catch (Exception e) {
-                Utils.sendExceptionReport(e, getApplicationContext());
-                e.printStackTrace();
-            }
-        }
-    }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {

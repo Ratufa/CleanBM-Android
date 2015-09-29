@@ -36,6 +36,7 @@ import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.LatLngBounds;
 import com.google.android.gms.maps.model.VisibleRegion;
 import com.javabeans.Popup_Menu_Item;
+import com.parse.ParseFacebookUtils;
 import com.parse.ParseUser;
 
 import java.io.IOException;
@@ -176,6 +177,7 @@ public class AddNewLocationActivity extends FragmentActivity {
        Showing the pop up menu.
 
     */
+    Boolean fbUser=false;
     public PopupWindow showMenu() {
         //Initialize a pop up window type
         LinearLayout layoutt = new LinearLayout(this);
@@ -190,7 +192,9 @@ public class AddNewLocationActivity extends FragmentActivity {
             If User is verify and successfully login
             then If block will be run and showing "Logout" option.
         */
-        if (currentUser.getUsername() != null && email_verify==true) {
+        fbUser = ParseFacebookUtils.isLinked(ParseUser.getCurrentUser());
+        Log.d("Splash screen "," "+email_verify);
+        if ((currentUser.getUsername() != null && email_verify==true) || fbUser){
             menus = new Popup_Menu_Item[]{
                     new Popup_Menu_Item(R.drawable.home_icon, getResources().getString(R.string.Home)),
                     new Popup_Menu_Item(R.drawable.location_icon, getResources().getString(R.string.search_near_me)),

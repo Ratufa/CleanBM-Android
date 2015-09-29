@@ -2,13 +2,17 @@ package com.cleanbm;
 
 import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.app.ProgressDialog;
 import android.content.Context;
+import android.content.DialogInterface;
+import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.provider.MediaStore;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
@@ -58,8 +62,8 @@ public class GiveReviewActivity extends Activity {
     private ProgressDialog pd;
     RatingBar rate_BathRoom;
     TextView txtWriteurReview;
-    RadioGroup radioGroup ; //,radioGrpLikeUnlike;
-    String BathRoomtype="Squat";
+    RadioGroup radioGroup,radioGrpBestBathroom ; //,radioGrpLikeUnlike;
+    String BathRoomtype="Squat", bathroom_best_for="Both";
     //String rating_value="0.0";
     String bathroom_id="";
     EditText edtReviewMsg;
@@ -71,6 +75,7 @@ public class GiveReviewActivity extends Activity {
     String review_msg,userName,user_Id,full_address;
     String TAG ="GiveReviewActivity";
     TextView txt_Titlebar;
+    int CAPTURE_IMAGE_ACTIVITY_REQUEST_CODE=101;
 
     private AlertDialogManager alert = new AlertDialogManager();
     @Override
@@ -95,7 +100,7 @@ public class GiveReviewActivity extends Activity {
             @Override
             public void onRatingChanged(RatingBar ratingBar, float rating, boolean fromUser) {
                 rating_value = String.valueOf(ratingBar.getRating());
-               }
+            }
         });
 
         radioGroup =(RadioGroup)findViewById(R.id.radioGroup);
@@ -107,6 +112,28 @@ public class GiveReviewActivity extends Activity {
 
                 } else if (checkedId == R.id.radio_Sit) {
                     BathRoomtype = "Sit";
+                }
+            }
+        });
+
+           /*
+            Choose bathroom best for option.
+       */
+        radioGrpBestBathroom = (RadioGroup)findViewById(R.id.radiogrpBestFor);
+        radioGrpBestBathroom.setOnCheckedChangeListener(new RadioGroup.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(RadioGroup group, int checkedId) {
+                if(checkedId==R.id.radioMale)
+                {
+                    bathroom_best_for="Male";
+                }
+                else if(checkedId==R.id.radioFemale)
+                {
+                    bathroom_best_for="Female";
+                }
+                else if(checkedId==R.id.radioBoth)
+                {
+                    bathroom_best_for="Both";
                 }
             }
         });
@@ -141,6 +168,7 @@ public class GiveReviewActivity extends Activity {
 
 
     }
+    String check_image_select="NO";
     View.OnClickListener mButtonClickListener = new View.OnClickListener() {
         @Override
         public void onClick(View v) {
@@ -164,6 +192,14 @@ public class GiveReviewActivity extends Activity {
                             user_Id = currentUser.getObjectId();
                             HandlerAsync handlerAsync = new HandlerAsync();
                             handlerAsync.execute("", "", "");
+                        if(imagesList.size()!=0)
+                        {
+                         check_image_select="YES"   ;
+                        }
+                                Intent intent=new Intent();
+                                intent.putExtra("MESSAGE",check_image_select);
+                                setResult(102,intent);
+                                finish();//finishing activity
                        // };
                     }
                     else
@@ -174,15 +210,63 @@ public class GiveReviewActivity extends Activity {
 
             }
             else if (v == ImageView_photo) {
-                new Picker.Builder(GiveReviewActivity.this, new MyPickListener(), R.style.MIP_theme)
-                        .setPickMode(Picker.PickMode.MULTIPLE_IMAGES)
-                        .setLimit(10)
-                        .build()
-                        .startActivity();
+                    /*
+                    TO select multiple images for upload.
+                    Library used to select multiple Images.
+                */
+                selectImage();
+                //https://github.com/yazeed44/MultiImagePicker
+
             }
         }
     };
 
+    private void selectImage() {
+        final CharSequence[] items = { "Take Photo", "Choose from Gallery", "Cancel" };
+        AlertDialog.Builder builder = new AlertDialog.Builder(GiveReviewActivity.this);
+        builder.setTitle("Add Photo!");
+        builder.setItems(items, new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int item) {
+                if (items[item].equals("Take Photo")) {
+
+                    Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+                    // start the image capture Intent
+                    startActivityForResult(intent, CAPTURE_IMAGE_ACTIVITY_REQUEST_CODE);
+                } else if (items[item].equals("Choose from Gallery")) {
+                    new Picker.Builder(GiveReviewActivity.this, new MyPickListener(), R.style.MIP_theme)
+                            .setPickMode(Picker.PickMode.MULTIPLE_IMAGES)
+                            .setLimit(10)
+                            .build()
+                            .startActivity();
+
+                } else if (items[item].equals("Cancel")) {
+                    dialog.dismiss();
+                }
+            }
+        });
+        builder.show();
+    }
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if(requestCode==CAPTURE_IMAGE_ACTIVITY_REQUEST_CODE)
+        {
+            Bitmap photo = (Bitmap) data.getExtras().get("data");
+            ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+            photo.compress(Bitmap.CompressFormat.JPEG, 100, bytes);
+            String path = MediaStore.Images.Media.insertImage(GiveReviewActivity.this.getContentResolver(), photo, "Title", null);
+            Uri img_uri=Uri.parse(path);
+            Log.d(TAG," img uri from cam"+path);
+            //String path=(String) data.getExtras().get("data");
+            ImagesBean imagesBean = new ImagesBean();
+            imagesBean.setUri(img_uri);
+            imagesList.add(imagesBean);
+            photoAdapter1 = new PhotoAdapter1();
+            hrzListView.setAdapter(photoAdapter1);
+            photoAdapter1.notifyDataSetChanged();
+        }
+    }
     private PhotoAdapter1 photoAdapter1;
     private class MyPickListener implements Picker.PickListener {
         @Override
@@ -231,6 +315,7 @@ public class GiveReviewActivity extends Activity {
             parseObject.put("userId", user_Id);
             parseObject.put("userName", userName);
             parseObject.put("bathRoomID", bathroom_id);
+            parseObject.put("genderType",bathroom_best_for);
             parseObject.put("userInfo", ParseUser.getCurrentUser());
             parseObject.put("bathInfo", ParseObject.createWithoutData("BathRoomDetail", bathroom_id));
 

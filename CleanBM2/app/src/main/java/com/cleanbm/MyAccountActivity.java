@@ -148,7 +148,9 @@ public class MyAccountActivity extends Activity implements View.OnClickListener 
         Popup_Menu_Item menus[] = new Popup_Menu_Item[5];
         Boolean email_verify = currentUser.getBoolean("emailVerified");
         Log.d("Splash screen "," "+email_verify);
-        if (currentUser.getUsername() != null && email_verify==true) {
+        fbUser = ParseFacebookUtils.isLinked(ParseUser.getCurrentUser());
+        Log.d("Splash screen "," "+email_verify);
+        if ((currentUser.getUsername() != null && email_verify==true) || fbUser){
             menus = new Popup_Menu_Item[]{
                     new Popup_Menu_Item(R.drawable.home_icon, getResources().getString(R.string.Home)),
                     new Popup_Menu_Item(R.drawable.location_icon, getResources().getString(R.string.search_near_me)),

@@ -1,6 +1,7 @@
 package com.cleanbm;
 
 import android.app.AlertDialog;
+import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -13,14 +14,22 @@ import android.support.v4.app.FragmentActivity;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.util.Log;
+import android.view.ActionMode;
+import android.view.ContextMenu;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
 import android.widget.AutoCompleteTextView;
+import android.widget.Filter;
+import android.widget.Filterable;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ListView;
@@ -42,7 +51,10 @@ import com.javabeans.PlacesList;
 import com.javabeans.PlacesSuggestionsBean;
 import com.javabeans.Popup_Menu_Item;
 import com.javabeans.SearchHotel;
+import com.parse.ParseFacebookUtils;
 import com.parse.ParseUser;
+
+import net.yazeed44.imagepicker.util.Util;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -53,14 +65,21 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
 import java.net.URL;
+import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Timer;
+import java.util.TimerTask;
 
 /**
  * Created by Ratufa.Paridhi on 8/12/2015.
+ *  SearchLocation is the Home screen in which there are two options
+ *  1) Get Nearest Bathroom , hotel and restaurants
+ *  2) Advance Search field , places are get from the google api
  */
-public class SearchLocationActivity extends FragmentActivity { //implements LoaderManager.LoaderCallbacks<Cursor> {
+public class SearchLocationActivity extends FragmentActivity {
 
     private String TAG = "SearchLocationActivity";
     private ArrayList<String> contactList;
@@ -71,6 +90,7 @@ public class SearchLocationActivity extends FragmentActivity { //implements Load
     PopupWindow popupWindow;
     private AlertDialogManager alert = new AlertDialogManager();
     public static int flag = 0;
+    public int get_place_from_autocomplete=0;
     PopupMenuAdapter adapter;
 
     private ArrayList<SearchHotel> arrayList_hotel = new ArrayList<SearchHotel>();
@@ -84,12 +104,6 @@ public class SearchLocationActivity extends FragmentActivity { //implements Load
     private GooglePlaces googlePlaces;
     private GPSTracker gpsTracker;
 
-    // KEY Strings
-    public static String KEY_REFERENCE = "reference"; // id of the place
-    public static String KEY_NAME = "name"; // name of the place
-    public static String KEY_VICINITY = "vicinity"; // Place area name
-    // String URL = "http://maps.googleapis.com/maps/api/geocode/json?address="+reference+"&sensor=false";
-
     // for google place
     private DownloadTask placesDownloadTask;
     private DownloadTask placeDetailsDownloadTask;
@@ -98,6 +112,7 @@ public class SearchLocationActivity extends FragmentActivity { //implements Load
     final int PLACES = 0;
     TextView txt_Titlebar;
     final int PLACES_DETAILS = 1;
+    String term,reference;
 
     public static final String LOGIN_PREFERENCES = "LoginPrefs";
 
@@ -138,12 +153,13 @@ public class SearchLocationActivity extends FragmentActivity { //implements Load
         } else {
             alert.showAlertDialog(SearchLocationActivity.this, getResources().getString(R.string.connection_not_available));
         }
+       // Indore
         contactList = new ArrayList<String>();
         autoCompView = (AutoCompleteTextView) findViewById(R.id.edtSearchLocation);
         autoCompView.setThreshold(1);
+        autoCompView.setAdapter(new GooglePlacesAutocompleteAdapter(this,R.layout.spinner_item));
         //   autoCompView.setAdapter(new PlacesAutoCompleteAdapter(SearchLocationActivity.this,android.R.layout.simple_list_item_1));
-        autoCompView.addTextChangedListener(new TextWatcher() {
-            private boolean shouldAutoComplete = true;
+        /*autoCompView.addTextChangedListener(new TextWatcher() {
 
             @Override
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {
@@ -152,8 +168,33 @@ public class SearchLocationActivity extends FragmentActivity { //implements Load
 
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
-                //    handleIntent(getIntent());
+                if(placesDownloadTask!=null)
+                {
+                    if(placesDownloadTask.getStatus() == AsyncTask.Status.PENDING ||
+                            placesDownloadTask.getStatus() == AsyncTask.Status.RUNNING ||
+                            placesDownloadTask.getStatus() == AsyncTask.Status.FINISHED)
+                    {
+                        Log.i("--placesDownloadTask--","progress_status : "+placesDownloadTask.getStatus());
+                        placesDownloadTask.cancel(true);
+                    }
+                }
+             *//*   //    handleIntent(getIntent());
                 // shouldAutoComplete = true;
+                // Creating a DownloadTask to download Google Places matching "s"
+                placesDownloadTask = new DownloadTask(PLACES);
+
+                // Getting url to the Google Places Autocomplete api
+                String url = GooglePlaces.getAutoCompleteUrl(SearchLocationActivity.this, s.toString());
+                Log.d("URL : ", url);
+
+                // Start downloading Google Places
+                // This causes to execute doInBackground() of DownloadTask class
+                placesDownloadTask.execute(url);*//*
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {
+            // shouldAutoComplete = true;
                 // Creating a DownloadTask to download Google Places matching "s"
                 placesDownloadTask = new DownloadTask(PLACES);
 
@@ -165,12 +206,7 @@ public class SearchLocationActivity extends FragmentActivity { //implements Load
                 // This causes to execute doInBackground() of DownloadTask class
                 placesDownloadTask.execute(url);
             }
-
-            @Override
-            public void afterTextChanged(Editable s) {
-
-            }
-        });
+        });*/
 
         popupWindow.setOnDismissListener(new PopupWindow.OnDismissListener() {
             @Override
@@ -182,19 +218,23 @@ public class SearchLocationActivity extends FragmentActivity { //implements Load
         autoCompView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                 autoCompView.setText(suggestionsList.get(position).getDescription());
+                get_place_from_autocomplete=1;
+               term = resultList.get(position).getDescription();
+                reference = resultList.get(position).getReference();
 
                 // Creating a DownloadTask to download Places details of the selected place
                 placeDetailsDownloadTask = new DownloadTask(PLACES_DETAILS);
+                Log.d(TAG," Log 1"+term+" "+reference);
 
                 // Getting url to the Google Places details api
-                String url = GooglePlaces.getPlaceDetailsUrl(SearchLocationActivity.this, suggestionsList.get(position).getReference());
+                String url = GooglePlaces.getPlaceDetailsUrl(SearchLocationActivity.this, reference);
 
                 Log.d(TAG, "Detail URL :" + url);
               //  Utils.setProgress(SearchLocationActivity.this,true);
                 // Start downloading Google Place Details
                 // This causes to execute doInBackground() of DownloadTask class
                 placeDetailsDownloadTask.execute(url);
+                autoCompView.setText(term);
               //  Utils.setProgress(SearchLocationActivity.this,false);
             }
         });
@@ -213,34 +253,36 @@ public class SearchLocationActivity extends FragmentActivity { //implements Load
             }
         });
 
-
         txtLookUpThisLocation.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 if (autoCompView.getText().length() == 0) {
                     alert.showAlertDialog(SearchLocationActivity.this, getResources().getString(R.string.enter_Confirmpassword));
                 } else if (Utils.isInternetConnected(SearchLocationActivity.this)) {
-
-                    //if (!TextUtils.isNullOrEmpty(address.getAddress())) {
-                    flag = 1;
-//                        LatLng latLng = new LatLng(restaurentLatitude, restaurentLongitude);
-                    Intent intent = new Intent(getApplicationContext(), DashBoardActivity.class);
-                    intent.putExtra("R_LAT", restaurentLatitude);
-                    intent.putExtra("R_LON", restaurentLongitude);
-                    Log.d(TAG, " before pass" + restaurentLatitude + " " + restaurentLongitude);
-                    startActivity(intent);
-                    autoCompView.setText("");
-                   //}
+                            if(get_place_from_autocomplete==1) {
+                                flag = 1;
+                                Intent intent = new Intent(getApplicationContext(), DashBoardActivity.class);
+                                intent.putExtra("R_LAT", restaurentLatitude);
+                                intent.putExtra("R_LON", restaurentLongitude);
+                                Log.d(TAG, " before pass" + restaurentLatitude + " " + restaurentLongitude);
+                                startActivity(intent);
+                                autoCompView.setText("");
+                                get_place_from_autocomplete=0;
+                            }
+                            else
+                            {
+                                Log.d(TAG," Show message : User enter the full address!!");
+                            }
                 } else {
                     alert.showAlertDialog(SearchLocationActivity.this, getResources().getString(R.string.connection_not_available));
                 }
-
             }
 
         });
 
     }
 
+    private boolean fbUser = false;
     public PopupWindow showMenu() {
         //Initialize a pop up window type
         LayoutInflater inflater = (LayoutInflater) SearchLocationActivity.this.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
@@ -249,9 +291,10 @@ public class SearchLocationActivity extends FragmentActivity { //implements Load
 
         ParseUser currentUser = ParseUser.getCurrentUser();
         Popup_Menu_Item menus[] = new Popup_Menu_Item[5];
+        fbUser = ParseFacebookUtils.isLinked(ParseUser.getCurrentUser());
         Boolean email_verify = currentUser.getBoolean("emailVerified");
         Log.d("Splash screen "," "+email_verify);
-        if (currentUser.getUsername() != null && email_verify==true) {
+        if ((currentUser.getUsername() != null && email_verify==true) || fbUser) {
             menus = new Popup_Menu_Item[]{
                    new Popup_Menu_Item(R.drawable.location_icon, getResources().getString(R.string.search_near_me)),
                     new Popup_Menu_Item(R.drawable.search_icon, getResources().getString(R.string.search_location)),
@@ -316,8 +359,6 @@ public class SearchLocationActivity extends FragmentActivity { //implements Load
                 img_Menu.setImageResource(R.drawable.menu_icon);
             }
             popupWindow.showAsDropDown(v, -5, 0);
-
-
         }
     };
 
@@ -457,194 +498,6 @@ public class SearchLocationActivity extends FragmentActivity { //implements Load
 
     ArrayList<AddressBean> placesList = new ArrayList<AddressBean>();
 
-    private class GetAddressTask extends AsyncTask<String, Void, JSONObject> {
-
-        @Override
-        protected JSONObject doInBackground(String... params) {
-            String data = "";
-            InputStream iStream = null;
-            HttpURLConnection urlConnection = null;
-//            ArrayList<AddressBean> list = null;
-
-            JSONObject jsonObject = null;
-
-            Log.d("URL Data Task", params[0]);
-            try {
-                URL url = new URL("http://maps.googleapis.com/maps/api/geocode/json?address=" + params[0] + "&sensor=false");
-
-                // Creating an http connection to communicate with url
-                urlConnection = (HttpURLConnection) url.openConnection();
-
-                // Connecting to url
-                urlConnection.connect();
-
-                // Reading data from url
-                iStream = urlConnection.getInputStream();
-
-                BufferedReader br = new BufferedReader(new InputStreamReader(iStream));
-
-                StringBuffer sb = new StringBuffer();
-
-                String line = "";
-                while ((line = br.readLine()) != null) {
-                    sb.append(line);
-                }
-
-                data = sb.toString();
-                Log.d("data fech", data);
-                br.close();
-
-                try {
-                    jsonObject = new JSONObject(data);
-                    return jsonObject;
-                } catch (JSONException e) {
-                    e.printStackTrace();
-                }
-            } catch (Exception e) {
-                Log.d("Exception ", e.toString());
-            } finally {
-                try {
-                    iStream.close();
-                    urlConnection.disconnect();
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            }
-            return jsonObject;
-        }
-
-        @Override
-        protected void onPostExecute(JSONObject jsonObject) {
-
-            super.onPostExecute(jsonObject);
-
-
-            if (jsonObject != null) {
-
-                try {
-                    JSONArray jPlaces = jsonObject.getJSONArray("results");
-                    placesList.clear();
-
-                    for (int i = 0; i < jPlaces.length(); i++) {
-                        try {
-                            AddressBean place = new AddressBean();
-                            JSONObject jPlace = jPlaces.getJSONObject(i);
-                            place.setAddress(jPlace.getString("formatted_address"));
-                            place.setLat(jPlace.getJSONObject("geometry").getJSONObject("location").getString("lat"));
-                            place.setLng(jPlace.getJSONObject("geometry").getJSONObject("location").getString("lng"));
-                            placesList.add(place);
-                        } catch (JSONException e) {
-                            e.printStackTrace();
-                        }
-                    }
-
-                } catch (JSONException e) {
-                    e.printStackTrace();
-                }
-
-//                SimpleAdapter adapter = new SimpleAdapter(getApplicationContext(), list, R.layout.spinner_item, from, to);
-//                ArrayAdapter adapter = new ArrayAdapter(SearchLocationActivity.this, android.R.layout.simple_list_item_1, list);
-                AddressAdapter adapter = new AddressAdapter(SearchLocationActivity.this, placesList);
-
-                // Setting the adapter
-                autoCompView.setAdapter(adapter);
-                adapter.notifyDataSetChanged();
-            } else {
-
-            }
-        }
-    }
-
-
-//    /**
-//     * Background Async Task to Load Google places
-//     */
-//    class LoadPlaces extends AsyncTask<String, String, String> {
-//
-//        Double la, ln;
-//
-//        public LoadPlaces(double latitude, double longitude) {
-//            this.la = latitude;
-//            this.ln = longitude;
-//        }
-//
-//        @Override
-//        protected void onPreExecute() {
-//            super.onPreExecute();
-//        }
-//
-//        protected String doInBackground(String... args) {
-//            // creating Places class object
-//            googlePlaces = new GooglePlaces();
-//
-//            try {
-//                // Separeate your place types by PIPE symbol "|"
-//                // If you want all types places make it as null
-//                // Check list of types supported by google
-//                String types = "restaurant"; // Listing places only cafes, restaurants
-//
-//                // Radius in meters - increase this value if you don't find any places
-//                double radius = 10000; // 1000 meters
-//
-//                nearPlaces = googlePlaces.search(la, ln, radius, types);
-//
-//            } catch (Exception e) {
-//                e.printStackTrace();
-//            }
-//            return null;
-//        }
-//
-//        protected void onPostExecute(String file_url) {
-//            /**
-//             * Updating parsed Places into LISTVIEW
-//             * */
-//            // Get json response status
-//            String status = nearPlaces.status;
-//
-//            // Check for all possible status
-//            if (status.equals("OK")) {
-//                // Successfully got places details
-//                if (nearPlaces.results != null) {
-//                    // loop through each place
-//                    for (Place p : nearPlaces.results) {
-//                        HashMap<String, String> map = new HashMap<String, String>();
-//
-//                        // Place reference won't display in listview - it will be hidden
-//                        // Place reference is used to get "place full details"
-//                        map.put(KEY_REFERENCE, p.reference);
-//
-//                        String name = p.vicinity;
-//                        // Place name
-//                        map.put(KEY_VICINITY, p.vicinity);
-//
-//                        // adding HashMap to ArrayList
-//                        placesListItems.add(map);
-//                        contactList.add(name);
-//                    }
-//                    // list adapter
-//                    SimpleAdapter adapter = new SimpleAdapter(SearchLocationActivity.this, placesListItems,
-//                            R.layout.search_list_item,
-//                            new String[]{KEY_REFERENCE, KEY_VICINITY}, new int[]{
-//                            R.id.reference, R.id.name});
-//
-//                }
-//            } else if (status.equals("ZERO_RESULTS")) {
-//                alert.showAlertDialog(SearchLocationActivity.this, "Near Places Sorry no places found. Try to change the types of places");
-//            } else if (status.equals("UNKNOWN_ERROR")) {
-//                alert.showAlertDialog(SearchLocationActivity.this, "Places Error Sorry unknown error occured.");
-//            } else if (status.equals("OVER_QUERY_LIMIT")) {
-//                alert.showAlertDialog(SearchLocationActivity.this, "Places Error Sorry query limit to google places is reached");
-//            } else if (status.equals("REQUEST_DENIED")) {
-//                alert.showAlertDialog(SearchLocationActivity.this, "Places Error Sorry error occured. Request is denied");
-//            } else if (status.equals("INVALID_REQUEST")) {
-//                alert.showAlertDialog(SearchLocationActivity.this, "Places Error Sorry error occured. Invalid Request");
-//            } else {
-//                alert.showAlertDialog(SearchLocationActivity.this, "Places Error Sorry error occured.");
-//            }
-//        }
-//
-//    }
-
     @Override
     public void onBackPressed() {
         //  super.onBackPressed();
@@ -705,6 +558,11 @@ public class SearchLocationActivity extends FragmentActivity { //implements Load
         }
 
         @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+        }
+
+        @Override
         protected String doInBackground(String... url) {
 
             // For storing data from web service
@@ -722,6 +580,7 @@ public class SearchLocationActivity extends FragmentActivity { //implements Load
         @Override
         protected void onPostExecute(String result) {
             super.onPostExecute(result);
+            //setProgress(false);
             Log.d("DownloadTask : ", result);
             switch (downloadType) {
                 case PLACES:
@@ -735,6 +594,7 @@ public class SearchLocationActivity extends FragmentActivity { //implements Load
                     break;
 
                 case PLACES_DETAILS:
+                    Log.d(TAG,"Log 4");
                     // Creating ParserTask for parsing Google Places
                     placeDetailsParserTask = new DetailParserTask();
 
@@ -751,6 +611,7 @@ public class SearchLocationActivity extends FragmentActivity { //implements Load
      * A class to parse the Google Places in JSON format
      */
     private class ParserTask extends AsyncTask<String, Integer, ArrayList<PlacesSuggestionsBean>> {
+
 
 
         @Override
@@ -773,7 +634,7 @@ public class SearchLocationActivity extends FragmentActivity { //implements Load
 
         @Override
         protected void onPostExecute(ArrayList<PlacesSuggestionsBean> result) {
-            // Creating a SimpleAdapter for the AutoCompleteTextView
+            // Creating a SimpleAdapter for the AutoCompleteTextView Indore airport
             SpinnerAdapter adapter = new SpinnerAdapter(SearchLocationActivity.this, result);
             // Setting the adapter
             autoCompView.setAdapter(adapter);
@@ -782,8 +643,21 @@ public class SearchLocationActivity extends FragmentActivity { //implements Load
     }
 
     ArrayList<PlaceLocation> locationList = null;
+    ProgressDialog dialog;
 
     private class DetailParserTask extends AsyncTask<String, Integer, ArrayList<PlaceLocation>> {
+
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+            dialog = new ProgressDialog(SearchLocationActivity.this);
+            dialog.setMessage(getString(R.string.loading));
+            dialog.setIndeterminateDrawable(getResources().getDrawable(R.drawable.progress_dialog));
+            dialog.setIndeterminate(true);
+            dialog.setCancelable(false);
+            dialog.show();
+            Log.d(TAG, "Log 2");
+        }
 
         @Override
         protected ArrayList<PlaceLocation> doInBackground(String... jsonData) {
@@ -806,6 +680,7 @@ public class SearchLocationActivity extends FragmentActivity { //implements Load
         @Override
         protected void onPostExecute(ArrayList<PlaceLocation> result) {
 
+            Log.d(TAG,"log 3");
             PlaceLocation hm = result.get(0);
 
             // Getting latitude from the parsed data
@@ -815,9 +690,151 @@ public class SearchLocationActivity extends FragmentActivity { //implements Load
             // Getting longitude from the parsed data
             restaurentLongitude = hm.getLongitude();
             Log.d(TAG, "Longitude : " + restaurentLongitude);
-
-        }
+            final Timer t = new Timer();
+            t.schedule(new TimerTask() {
+                public void run() {
+                    dialog.dismiss(); // when the task active then close the dialog
+                    t.cancel(); // also just top the timer thread, otherwise, you may receive a crash report
+                }
+            }, 2000);
+           }
     }
 
+    private static final String PLACES_API_BASE = "https://maps.googleapis.com/maps/api/place";
+    private static final String TYPE_AUTOCOMPLETE = "/autocomplete";
+    private static final String OUT_JSON = "/json";
+    //------------ make your specific key ------------
+    private static final String API_KEY = "AIzaSyCdi7F8PV02m13lhPm3gRQEmsEhWHB_iXk";
+    ArrayList<PlacesSuggestionsBean> resultList = null;
+    public  ArrayList<PlacesSuggestionsBean> autocomplete(String input) {
 
+
+        HttpURLConnection conn = null;
+        StringBuilder jsonResults = new StringBuilder();
+        try {
+
+            StringBuilder sb = new StringBuilder(PLACES_API_BASE + TYPE_AUTOCOMPLETE + OUT_JSON);
+            sb.append("?key=" + API_KEY);
+            //sb.append("&components=country:india"); 12,Shikshak Nagar Airport Road,Indore Madhya Pradesh
+            sb.append("&input=" + URLEncoder.encode(input, "utf8"));
+
+            URL url = new URL(sb.toString());
+
+            System.out.println("URL: "+url);
+            conn = (HttpURLConnection) url.openConnection();
+            InputStreamReader in = new InputStreamReader(conn.getInputStream());
+
+            // Load the results into a StringBuilder
+            int read;
+            char[] buff = new char[1024];
+            while ((read = in.read(buff)) != -1) {
+                jsonResults.append(buff, 0, read);
+            }
+        } catch (MalformedURLException e) {
+            Log.e("sdf", "Error processing Places API URL", e);
+            return resultList;
+        } catch (IOException e) {
+            Log.e("dsd", "Error connecting to Places API", e);
+            return resultList;
+        } finally {
+            if (conn != null) {
+                conn.disconnect();
+            }
+        }
+
+        try {
+
+            // Create a JSON object hierarchy from the results
+            JSONObject jsonObj = new JSONObject(jsonResults.toString());
+            JSONArray predsJsonArray = jsonObj.getJSONArray("predictions");
+
+            // Extract the Place descriptions from the results
+            resultList = new ArrayList<PlacesSuggestionsBean>(predsJsonArray.length());
+            for (int i = 0; i < predsJsonArray.length(); i++) {
+                System.out.println(predsJsonArray.getJSONObject(i).getString("description"));
+                System.out.println("============================================================");
+                PlacesSuggestionsBean placesSuggestionsBean = new PlacesSuggestionsBean();
+                placesSuggestionsBean.setDescription(predsJsonArray.getJSONObject(i).getString("description"));
+                placesSuggestionsBean.setId(predsJsonArray.getJSONObject(i).getString("id"));
+                placesSuggestionsBean.setReference(predsJsonArray.getJSONObject(i).getString("reference"));
+                resultList.add(placesSuggestionsBean);
+            }
+        } catch (JSONException e) {
+            Log.e("adsd", "Cannot process JSON results", e);
+        }
+
+        return resultList;
+    }
+
+    class GooglePlacesAutocompleteAdapter extends ArrayAdapter<PlacesSuggestionsBean> implements Filterable {
+        private ArrayList<PlacesSuggestionsBean> resultList;
+
+        public GooglePlacesAutocompleteAdapter(Context context, int textViewResourceId) {
+            super(context, textViewResourceId);
+        }
+
+        @Override
+        public int getCount() {
+            return resultList.size();
+        }
+
+        @Override
+        public PlacesSuggestionsBean getItem(int index) {
+            return resultList.get(index);
+        }
+
+        @Override
+        public Filter getFilter() {
+            Filter filter = new Filter() { // 12 Shikshak nagar airport road, Indore Madhaya Pradesh
+                @Override
+                protected FilterResults performFiltering(CharSequence constraint) {
+                    FilterResults filterResults = new FilterResults();
+                    if (constraint != null) {
+                        // Retrieve the autocomplete results.
+                        resultList = autocomplete(constraint.toString());
+
+                        // Assign the data to the FilterResults
+                        filterResults.values = resultList;
+                        filterResults.count = resultList.size();
+                    }
+                    return filterResults;
+                }
+
+                @Override
+                protected void publishResults(CharSequence constraint, FilterResults results) {
+                    if (results != null && results.count > 0) {
+                        notifyDataSetChanged();
+                    } else {
+                        notifyDataSetInvalidated();
+                    }
+                }
+            };
+            return filter;
+        }
+        @Override
+        public View getView(int position, View convertView, ViewGroup parent) {
+
+            final ViewHolder holder;
+            PlacesSuggestionsBean bean = getItem(position);
+
+            if (convertView == null) {
+
+                holder = new ViewHolder();
+
+                convertView = LayoutInflater.from(getContext()).inflate(R.layout.spinner_item, parent, false);
+
+                holder.tvFullName = (TextView) convertView.findViewById(R.id.text);
+                convertView.setTag(holder);
+            } else {
+                holder = (ViewHolder) convertView.getTag();
+            }
+
+            holder.tvFullName.setText(bean.getDescription());
+            return convertView;
+        }
+
+        class ViewHolder {
+            private TextView tvFullName;
+        }
+    }
 }
