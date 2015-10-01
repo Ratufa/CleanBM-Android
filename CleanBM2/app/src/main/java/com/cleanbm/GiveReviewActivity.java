@@ -18,12 +18,14 @@ import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.WindowManager;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.AdapterView;
 import android.widget.BaseAdapter;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.PopupWindow;
+import android.widget.RadioButton;
 import android.widget.RadioGroup;
 import android.widget.RatingBar;
 import android.widget.TextView;
@@ -33,8 +35,11 @@ import com.Utils.TextUtils;
 import com.Utils.Utils;
 import com.dialog.AlertDialogManager;
 import com.javabeans.ImagesBean;
+import com.parse.GetCallback;
+import com.parse.ParseException;
 import com.parse.ParseFile;
 import com.parse.ParseObject;
+import com.parse.ParseQuery;
 import com.parse.ParseUser;
 import com.widgets.HorizontalListView;
 
@@ -76,19 +81,29 @@ public class GiveReviewActivity extends Activity {
     String TAG ="GiveReviewActivity";
     TextView txt_Titlebar;
     int CAPTURE_IMAGE_ACTIVITY_REQUEST_CODE=101;
-
+    String update;
+    String message_,bathroomType,genderType;
+    String rating_,review_ID;
+    int bathType;
+    int flag_for_update=0;
     private AlertDialogManager alert = new AlertDialogManager();
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_feedback);
+        this.getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN);
 
-        bathroom_id = getIntent().getExtras().getString("bath_id");
 
         img_navigation_icon = (ImageView) findViewById(R.id.img_navigation_icon);
         img_navigation_icon.setImageResource(R.drawable.back_icon);
         img_navigation_icon.setVisibility(View.VISIBLE);
         img_navigation_icon.setOnClickListener(mMenuButtonClickListener);
+
+        edtReviewMsg =(EditText)findViewById(R.id.edtReviewMsg);
+        Utils.hideKeyBoard(getApplicationContext(), edtReviewMsg);
+
+        txtWriteurReview =(TextView)findViewById(R.id.txt_GiveReview);
+        txtWriteurReview.setOnClickListener(mButtonClickListener);
 
         txt_Titlebar = (TextView)findViewById(R.id.txt_Titlebar);
         txt_Titlebar.setText("CleanBM Give Review");
@@ -109,31 +124,28 @@ public class GiveReviewActivity extends Activity {
             public void onCheckedChanged(RadioGroup group, int checkedId) {
                 if (checkedId == R.id.radio_Squat) {
                     BathRoomtype = "Squat";
+                    bathType=101;
 
                 } else if (checkedId == R.id.radio_Sit) {
                     BathRoomtype = "Sit";
+                    bathType=102;
                 }
             }
         });
 
            /*
             Choose bathroom best for option.
-       */
+             */
         radioGrpBestBathroom = (RadioGroup)findViewById(R.id.radiogrpBestFor);
         radioGrpBestBathroom.setOnCheckedChangeListener(new RadioGroup.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(RadioGroup group, int checkedId) {
-                if(checkedId==R.id.radioMale)
-                {
-                    bathroom_best_for="Male";
-                }
-                else if(checkedId==R.id.radioFemale)
-                {
-                    bathroom_best_for="Female";
-                }
-                else if(checkedId==R.id.radioBoth)
-                {
-                    bathroom_best_for="Both";
+                if (checkedId == R.id.radioMale) {
+                    bathroom_best_for = "Male";
+                } else if (checkedId == R.id.radioFemale) {
+                    bathroom_best_for = "Female";
+                } else if (checkedId == R.id.radioBoth) {
+                    bathroom_best_for = "Both";
                 }
             }
         });
@@ -153,6 +165,9 @@ public class GiveReviewActivity extends Activity {
                     public void onClick(View view) {
                         imagesList.remove(position);
                         photoAdapter1.notifyDataSetChanged();
+                        if (imagesList.size() == 0) {
+                            hrzListView.setVisibility(View.GONE);
+                        }
                     }
                 });
                 return false;
@@ -160,11 +175,47 @@ public class GiveReviewActivity extends Activity {
         });
 
 
-        edtReviewMsg =(EditText)findViewById(R.id.edtReviewMsg);
-        Utils.hideKeyBoard(getApplicationContext(), edtReviewMsg);
+        bathroom_id = getIntent().getExtras().getString("bath_id");
+        update=getIntent().getExtras().getString("update");
+        if(update.equals("update"))
+        {
+            message_= getIntent().getExtras().getString("message");
+            rating_value = getIntent().getExtras().getString("rating");
+            BathRoomtype = getIntent().getExtras().getString("bathroomType");
+            bathroom_best_for =getIntent().getExtras().getString("genderType");
+            review_ID=getIntent().getExtras().getString("review_Id");
+            displayData();
+            flag_for_update=1;
+        }
+    }
+    float rating_ge;
+    public  void displayData()
+    {
+        edtReviewMsg.setText(message_);
+        rating_ge = Float.parseFloat(rating_value);
+        //float rate = (float)rating_;
+        rate_BathRoom.setRating(rating_ge);
+        RadioButton rbu4 =(RadioButton)findViewById(R.id.radio_Squat);
+        RadioButton rbu5 =(RadioButton)findViewById(R.id.radio_Sit);
 
-        txtWriteurReview =(TextView)findViewById(R.id.txt_GiveReview);
-        txtWriteurReview.setOnClickListener(mButtonClickListener);
+        RadioButton rbu1 =(RadioButton)findViewById(R.id.radioMale);
+        RadioButton rbu2 =(RadioButton)findViewById(R.id.radioFemale);
+        RadioButton rbu3 =(RadioButton)findViewById(R.id.radioBoth);
+        if(BathRoomtype.equals("Sit"))
+        {
+            rbu4.setChecked(true);
+        }else  if(BathRoomtype.equals("Squat")){
+            rbu5.setChecked(true);
+        }
+
+        if(bathroom_best_for.equals("Male"))
+        {
+            rbu1.setChecked(true);
+        }else if(bathroom_best_for.equals("Female")){
+            rbu2.setChecked(true);
+        }else if(bathroom_best_for.equals("Both")){
+            rbu3.setChecked(true);
+        }
 
 
     }
@@ -185,22 +236,26 @@ public class GiveReviewActivity extends Activity {
                 }
                 else {
                     if (Utils.isInternetConnected(GiveReviewActivity.this)) {
-                        ParseUser currentUser = ParseUser.getCurrentUser();
-                        Log.e(TAG, " " + currentUser.getUsername());
-                       // if (currentUser.getUsername() != null) {
+                        if (flag_for_update == 1) {
+                            UpdateReview handlerAsync = new UpdateReview();
+                            handlerAsync.execute("", "", "");
+                        } else {
+                            ParseUser currentUser = ParseUser.getCurrentUser();
+                            Log.e(TAG, " " + currentUser.getUsername());
+                            // if (currentUser.getUsername() != null) {
                             userName = currentUser.getString("name");
                             user_Id = currentUser.getObjectId();
                             HandlerAsync handlerAsync = new HandlerAsync();
                             handlerAsync.execute("", "", "");
-                        if(imagesList.size()!=0)
-                        {
-                         check_image_select="YES"   ;
+                            if (imagesList.size() != 0) {
+                                check_image_select = "YES";
+                            }
+                            Intent intent = new Intent();
+                            intent.putExtra("MESSAGE", check_image_select);
+                            setResult(102, intent);
+                            finish();//finishing activity
+                            // };
                         }
-                                Intent intent=new Intent();
-                                intent.putExtra("MESSAGE",check_image_select);
-                                setResult(102,intent);
-                                finish();//finishing activity
-                       // };
                     }
                     else
                     {
@@ -253,6 +308,7 @@ public class GiveReviewActivity extends Activity {
         if(resultCode==RESULT_OK) {
             if (requestCode == CAPTURE_IMAGE_ACTIVITY_REQUEST_CODE) {
                 if (data != null) {
+                    hrzListView.setVisibility(View.VISIBLE);
                     Bitmap photo = (Bitmap) data.getExtras().get("data");
                     ByteArrayOutputStream bytes = new ByteArrayOutputStream();
                     photo.compress(Bitmap.CompressFormat.JPEG, 100, bytes);
@@ -280,6 +336,7 @@ public class GiveReviewActivity extends Activity {
                 imagesBean.setUri(Uri.fromFile(new File(images.get(i).path)));
                 imagesList.add(imagesBean);
             }
+            hrzListView.setVisibility(View.VISIBLE);
             photoAdapter1 = new PhotoAdapter1();
             hrzListView.setAdapter(photoAdapter1);
         }
@@ -297,6 +354,46 @@ public class GiveReviewActivity extends Activity {
         imm.hideSoftInputFromWindow(getCurrentFocus().getWindowToken(), 0);
         return true;
     }
+
+public class UpdateReview extends AsyncTask<String,String ,String >
+{
+    @Override
+    protected void onPreExecute() {
+        super.onPreExecute();
+        setProgress(true);
+    }
+
+    @Override
+    protected String doInBackground(String... params) {
+        ParseQuery<ParseObject> query = ParseQuery.getQuery("RattingByUser");
+        // Retrieve the object by id
+        query.getInBackground(review_ID, new GetCallback<ParseObject>() {
+            public void done(ParseObject gameScore, ParseException e) {
+                if (e == null) {
+                    // Now let's update it with some new data. In this case, only cheatMode and score
+                    // will get sent to the Parse Cloud. playerName hasn't changed.
+                    review_msg = edtReviewMsg.getText().toString().trim();
+                    gameScore.put("bathRating", Float.valueOf(rating_value));
+                    gameScore.put("MessageReview", review_msg);
+                    gameScore.put("bathRoomType", BathRoomtype);
+                    gameScore.put("genderType",bathroom_best_for);
+                    gameScore.saveInBackground();
+                    Log.e(TAG, rating_value + " " + review_msg + " " + BathRoomtype + "" + user_Id + " " + userName + " " + bathroom_id);
+
+                }
+            }
+        });
+        return null;
+    }
+    @Override
+    protected void onPostExecute(String s) {
+        super.onPostExecute(s);
+        setProgress(false);
+        Toast.makeText(getApplicationContext(),"Successfully updated.",Toast.LENGTH_LONG).show();
+      //  edtReviewMsg.setText("");
+      //  rate_BathRoom.setRating(0);
+    }
+}
 
 
     public class HandlerAsync extends AsyncTask<String,String ,String >

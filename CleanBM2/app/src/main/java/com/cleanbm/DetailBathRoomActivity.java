@@ -9,6 +9,7 @@ import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
+import android.graphics.Paint;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.ColorDrawable;
 import android.net.Uri;
@@ -35,6 +36,7 @@ import android.widget.RatingBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.Utils.TextUtils;
 import com.Utils.Utils;
 import com.adapter.PopupMenuAdapter;
 import com.adapter.ReviewAdapter;
@@ -70,6 +72,7 @@ import com.widgets.HorizontalListView;
 
 import net.yazeed44.imagepicker.model.ImageEntry;
 import net.yazeed44.imagepicker.util.Picker;
+import net.yazeed44.imagepicker.util.Util;
 
 import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
@@ -208,6 +211,8 @@ public class DetailBathRoomActivity extends FragmentActivity implements SwipeMen
     private ImageView img_Menu;
     private ProgressDialog pd;
     BathRoomDetail bathRoomDetail;
+    TextView txtReportBathroom;
+    String review_id;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -227,12 +232,11 @@ public class DetailBathRoomActivity extends FragmentActivity implements SwipeMen
             finish();
         }
 
-      /*  txt_RightImgButton = (TextView)findViewById(R.id.txt_RightImgButton);
-        txt_LeftImgButton =(TextView)findViewById(R.id.txt_LeftImgButton);
-        txt_RightImgButton.setOnClickListener(mImageMoveListener);
-        txt_LeftImgButton.setOnClickListener(mImageMoveListener);*/
-
         txtBathAddress = (TextView) findViewById(R.id.txtBathAddress);
+
+        txtReportBathroom =(TextView)findViewById(R.id.txtReportBathroom);
+        txtReportBathroom.setPaintFlags(txtReportBathroom.getPaintFlags() |   Paint.UNDERLINE_TEXT_FLAG);
+        txtReportBathroom.setOnClickListener(mReportBathRoomClick1);
 
         ratingBathRoom = (RatingBar) findViewById(R.id.ratingBathRoom);
         ratingBathRoom.setFocusable(false);
@@ -278,13 +282,82 @@ public class DetailBathRoomActivity extends FragmentActivity implements SwipeMen
             @Override
             public void onClick(View v) {
                 ParseUser currentUser = ParseUser.getCurrentUser();
-                Log.e(TAG, " " + currentUser.getUsername());
-                if (currentUser.getUsername() != null) {
-                    Intent in = new Intent(getApplicationContext(), GiveReviewActivity.class);
-                    Bundle bundle = new Bundle();
-                    bundle.putString("bath_id", bathroom_id);
-                    in.putExtras(bundle);
-                    startActivityForResult(in, 102);
+                Boolean email_verify = currentUser.getBoolean("emailVerified");
+                fbUser = ParseFacebookUtils.isLinked(ParseUser.getCurrentUser());
+                if ((!TextUtils.isNullOrEmpty(currentUser.getUsername()) && email_verify == true)|| fbUser) {
+                    new AsyncTask<Void,Void,Void>(){
+                        @Override
+                        protected void onPreExecute() {
+                            super.onPreExecute();
+                            Utils.setProgress(DetailBathRoomActivity.this,true);
+                        }
+
+                        @Override
+                        protected Void doInBackground(Void... params) {
+                            ParseQuery<ParseObject> query = ParseQuery.getQuery("RattingByUser");
+                            query.whereMatches("bathRoomID",bathroom_id);
+                            query.findInBackground(new FindCallback<ParseObject>() {
+                                @Override
+                                public void done(List<ParseObject> list, ParseException e) {
+                                    int flag = 0;
+                                    String message = "";
+                                    double rating =0.0;
+                                    String bathroomType = "";
+                                    String genderType = "";
+                                    user_Id = ParseUser.getCurrentUser().getObjectId();
+                                    Log.d(TAG," review btn "+user_Id+" "+bathroom_id); // 8MqH4iqZgP nRDMEk1BtA
+                                    for (int i = 0; i < list.size(); i++) {
+                                        String user_id_ = list.get(i).getString("userId");
+                                        Log.d(TAG," user id inside"+user_id_);
+                                        String bathroom_id_ = list.get(i).getString("bathRoomID");
+                                        if (user_id_.equals(user_Id) && bathroom_id_.equals(bathroom_id)) {
+                                            flag = 1;
+                                            Log.d(TAG," matchedddd");
+                                            message = list.get(i).getString("MessageReview");
+                                            rating = list.get(i).getDouble("bathRating");
+                                            bathroomType = list.get(i).getString("bathRoomType");
+                                            genderType = list.get(i).getString("genderType");
+                                            review_id = list.get(i).getObjectId();
+
+                                        }
+                                    }
+                                    if (flag == 1) {
+                                        Log.d(TAG, " match");
+
+                                        Toast.makeText(getApplicationContext(),"You have already give review on this bathroom",Toast.LENGTH_SHORT).show();
+
+                                       /* Intent in = new Intent(getApplicationContext(), GiveReviewActivity.class);
+                                        Bundle bundle = new Bundle();
+                                        bundle.putString("bath_id", bathroom_id);
+                                        bundle.putString("update", "update");
+                                        bundle.putString("message", message);
+                                        bundle.putString("rating", String.valueOf(rating));
+                                        bundle.putString("review_Id", review_id);
+                                        bundle.putString("bathroomType", bathroomType);
+                                        bundle.putString("genderType", genderType);
+                                        in.putExtras(bundle);
+                                        Log.d(TAG, " " + message + " " + rating + " " + bathroomType + " " + genderType);
+                                        startActivityForResult(in, 102);*/
+                                    } else {
+                                        Intent in = new Intent(getApplicationContext(), GiveReviewActivity.class);
+                                        Bundle bundle = new Bundle();
+                                        bundle.putString("bath_id", bathroom_id);
+                                        bundle.putString("update", "Not_update");
+                                        in.putExtras(bundle);
+                                        startActivityForResult(in, 102);
+                                    }
+                                }
+                            });
+                            return null;
+                        }
+
+                        @Override
+                        protected void onPostExecute(Void aVoid) {
+                            super.onPostExecute(aVoid);
+                            Utils.setProgress(DetailBathRoomActivity.this, false);
+                        }
+                    }.execute();
+
                 } else {
                     AlertDialog.Builder alertDialog = new AlertDialog.Builder(
                             DetailBathRoomActivity.this);
@@ -292,19 +365,8 @@ public class DetailBathRoomActivity extends FragmentActivity implements SwipeMen
                     alertDialog.setPositiveButton("Login",
                             new DialogInterface.OnClickListener() {
                                 public void onClick(DialogInterface dialog, int which) {
-                                    //finish();
-                                    //String bathDes= edtBathRoomDescrip.getText().toString();
-                                    //   float rating = rate_BathRoom.getRating();
-                                    //  Log.d(TAG," detail on click on login "+" "+rating+" "+BathRoomtype);
-
                                     Intent in = new Intent(DetailBathRoomActivity.this, LoginActivity.class);
-                                    // Bundle bundle = new Bundle();
-                                    //  in.putExtra("BathDescription",bathDes);
                                     in.putExtra("BathRating", "");
-                                    // in.putExtra("BathType",BathRoomtype);
-                                    // bundle.putString("BathDescription", bathDes);
-                                    // bundle.putFloat("BathRating", rating);
-                                    // bundle.putString("BathType", BathRoomtype);
                                     startActivityForResult(in, 101);
                                 }
                             });
@@ -360,22 +422,22 @@ public class DetailBathRoomActivity extends FragmentActivity implements SwipeMen
             @Override
             public void done(List<ParseObject> list, ParseException e) {
 
-                       // horizontalGalleryView.removeAllViews();
+                // horizontalGalleryView.removeAllViews();
                 arrayList_bathroomImg.clear();
                 for (ParseObject parseObject : list) {
                     ParseFile postImage = parseObject.getParseFile("bathroomImage");
                     bathroom_img_id = parseObject.getObjectId();
                     userId_who_posted_img = parseObject.getString("userId");
-                    Log.d(TAG,"bathroom id and user id who posted"+bathroom_img_id+" "+userId_who_posted_img);
+                    Log.d(TAG, "bathroom id and user id who posted" + bathroom_img_id + " " + userId_who_posted_img);
                     if (postImage != null) {
                         Uri imageUri = Uri.parse(postImage.getUrl());
 
-                        BathroomImages bathroomImages = new BathroomImages(imageUri,userId_who_posted_img,bathroom_img_id);
+                        BathroomImages bathroomImages = new BathroomImages(imageUri, userId_who_posted_img, bathroom_img_id);
                         arrayList_bathroomImg.add(bathroomImages);
                     }
                 }
                 photoAdapter1 = new PhotoAdapter1();
-                 hrzListView.setAdapter(photoAdapter1);
+                hrzListView.setAdapter(photoAdapter1);
                 // Set the emptyView to the ListView : http://www.myandroidsolutions.com/2014/09/25/listview-empty-message/
                 hrzListView.setEmptyView(findViewById(R.id.emptyElement));
 
@@ -388,13 +450,13 @@ public class DetailBathRoomActivity extends FragmentActivity implements SwipeMen
                     public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                         final String Uri = arrayList_bathroomImg.get(position).getUri().toString();
                         userId_who_posted_img = arrayList_bathroomImg.get(position).getUser_id_posted_img();
-                        bathroom_img_id =arrayList_bathroomImg.get(position).getBathroom_img_id();
-                      //  Toast.makeText(getApplicationContext()," "+ arrayList_bathroomImg.get(position).getBathroom_img_id(),Toast.LENGTH_SHORT).show();
-                        Intent intent = new Intent(getApplicationContext(),FullImageViewActivity.class);
-                        intent.putExtra("Image_Uri",Uri);
-                        intent.putExtra("Bathroom_id",bathroom_id);
-                        intent.putExtra("Bathroom_img_id",bathroom_img_id);
-                        intent.putExtra("userId_who_posted_img",userId_who_posted_img);
+                        bathroom_img_id = arrayList_bathroomImg.get(position).getBathroom_img_id();
+                        //  Toast.makeText(getApplicationContext()," "+ arrayList_bathroomImg.get(position).getBathroom_img_id(),Toast.LENGTH_SHORT).show();
+                        Intent intent = new Intent(getApplicationContext(), FullImageViewActivity.class);
+                        intent.putExtra("Image_Uri", Uri);
+                        intent.putExtra("Bathroom_id", bathroom_id);
+                        intent.putExtra("Bathroom_img_id", bathroom_img_id);
+                        intent.putExtra("userId_who_posted_img", userId_who_posted_img);
                         startActivity(intent);
                     }
                 });
@@ -402,27 +464,112 @@ public class DetailBathRoomActivity extends FragmentActivity implements SwipeMen
             }
         });
     }
-
-
-/*    View.OnClickListener mImageMoveListener = new View.OnClickListener() {
+    View.OnClickListener mReportBathRoomClick1 = new View.OnClickListener()
+    {
         @Override
         public void onClick(View v) {
-            if(v== txt_LeftImgButton)
-            {
-                hrzListView.scrollTo(-90);
-            }
-            else if(v ==txt_RightImgButton)
-            {
+            ParseUser currentUser = ParseUser.getCurrentUser();
+            Boolean email_verify = currentUser.getBoolean("emailVerified");
+            fbUser = ParseFacebookUtils.isLinked(ParseUser.getCurrentUser());
+            if ((!TextUtils.isNullOrEmpty(currentUser.getUsername()) && email_verify == true)|| fbUser) {
+                final AlertDialog.Builder alertDialog = new AlertDialog.Builder(
+                        DetailBathRoomActivity.this);
+                alertDialog.setMessage("Report as inappropriate?");
+                alertDialog.setPositiveButton("YES", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        ParseQuery<ParseObject> query1 = ParseQuery.getQuery("BathroomReport");
+                        query1.findInBackground(new FindCallback<ParseObject>() {
+                            @Override
+                            public void done(List<ParseObject> list, ParseException e) {
+                                int flag = 0;
+                                for (int i = 0; i < list.size(); i++) {
+                                    String get_user_id = list.get(i).getString("current_userId");
+                                    String get_bathroom_id = list.get(i).getString("bathroomId");
+                                    if (get_bathroom_id.equals(bathroom_id) && get_user_id.equals(user_Id)) {
+                                        flag = 1;
+                                    }
+                                    if (flag == 1) {
+                                        Toast.makeText(getApplicationContext(), "You have already added this as inappropriate Report", Toast.LENGTH_SHORT).show();
 
+                                    } else {
+                                        reportCount = 1;
+                                        ParseObject parseObject = new ParseObject("BathroomReport");
+                                        parseObject.put("bathroomId", bathroom_id);
+                                        parseObject.put("reportCount", reportCount);
+                                        parseObject.put("current_userId", ParseUser.getCurrentUser().getObjectId());
+                                        parseObject.put("userInfo", ParseUser.getCurrentUser()); // Pointer of current user
+                                        parseObject.put("bathroomInfo", ParseObject.createWithoutData("BathRoomDetail", bathroom_id));// pointer of bathroom detail
+                                        parseObject.saveInBackground();
+                                        //   ParseObject ratingByUser = new ParseObject("RattingByUser");
+                                        final ParseQuery<ParseObject> query = ParseQuery.getQuery("BathRoomDetail");
+                                        query.getInBackground(bathroom_id, new GetCallback<ParseObject>() {
+                                            public void done(ParseObject object, ParseException e) {
+                                                if (e == null) {
+                                                    object.increment("ReportCount", 1);
+                                                    object.saveInBackground();
+                                                } else {
+                                                    // something went wrong
+                                                }
+                                            }
+                                        });
+                                        Toast.makeText(getApplicationContext(), "Successfully added report", Toast.LENGTH_SHORT).show();
+                                    }
+                                }
+                            }
+                        });
+                    }
+                });
+                alertDialog.setNegativeButton("NO", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        dialog.cancel();
+                    }
+                });
+                alertDialog.show();
+            }
+            else
+            {
+                AlertDialog.Builder alertDialog = new AlertDialog.Builder(
+                        DetailBathRoomActivity
+                                .this);
+                alertDialog.setMessage(getResources().getString(R.string.login_first_message));
+                alertDialog.setPositiveButton("Login",
+                        new DialogInterface.OnClickListener() {
+                            public void onClick(DialogInterface dialog, int which) {
+                                Intent in = new Intent(DetailBathRoomActivity.this, LoginActivity.class);
+                                in.putExtra("BathType", "");
+                                startActivityForResult(in, 101);
+                            }
+                        });
+                // Setting Negative "NO" Button
+                alertDialog.setNegativeButton("Cancel",
+                        new DialogInterface.OnClickListener() {
+                            public void onClick(DialogInterface dialog, int which) {
+                                // Write your code here to invoke NO event
+                                dialog.cancel();
+                            }
+                        });
+                // Showing Alert Message
+                alertDialog.show();
             }
         }
-    };*/
 
+    };
     @Override
     protected void onResume() {
         super.onResume();
         GetReview();
+        // initialize pop up window
+        popupWindow = showMenu();
+        popupWindow.setOnDismissListener(new PopupWindow.OnDismissListener() {
+            @Override
+            public void onDismiss() {
+                img_Menu.setImageResource(R.drawable.menu_icon);
+            }
+        });
     }
+
 
     public void displayData() {
 
@@ -643,11 +790,15 @@ public class DetailBathRoomActivity extends FragmentActivity implements SwipeMen
     @Override
     public boolean onMenuItemClick(int position, SwipeMenu menu, int index) {
         ParseUser currentUser = ParseUser.getCurrentUser();
+        Boolean email_verify = currentUser.getBoolean("emailVerified");
         switch (index) {
             case 0:
 
                 Log.e(TAG, " " + currentUser.getUsername());
-                if (currentUser.getUsername() != null) {
+
+                Log.d(TAG," "+email_verify);
+                fbUser = ParseFacebookUtils.isLinked(ParseUser.getCurrentUser());
+                if ((!TextUtils.isNullOrEmpty(currentUser.getUsername()) && email_verify == true)|| fbUser) {
                     //  userName = currentUser.getUsername();
                     user_Id = currentUser.getObjectId();
                     final String rreview_id = reviewListItems.get(position).getReview_id();
@@ -732,29 +883,13 @@ public class DetailBathRoomActivity extends FragmentActivity implements SwipeMen
                     AlertDialog.Builder alertDialog = new AlertDialog.Builder(
                             DetailBathRoomActivity
                                     .this);
-                    // Setting Dialog Title
-                    //  alertDialog.setTitle("Leave application?");
-                    // Setting Dialog Message
                     alertDialog.setMessage(getResources().getString(R.string.login_first_message));
-                    // Setting Icon to Dialog
-                    //alertDialog.setIcon(R.drawable.dialog_icon);
-                    // Setting Positive "Yes" Button
                     alertDialog.setPositiveButton("Login",
                             new DialogInterface.OnClickListener() {
                                 public void onClick(DialogInterface dialog, int which) {
-                                    //finish();
-                                    // String bathDes= edtBathRoomDescrip.getText().toString();
-                                    // float rating = rate_BathRoom.getRating();
-                                    //   Log.d(TAG," detail on click on login "+BathRoomDescription+" "+rating+" "+BathRoomtype);
 
                                     Intent in = new Intent(DetailBathRoomActivity.this, LoginActivity.class);
-                                    // Bundle bundle = new Bundle();
-                                    //   in.putExtra("BathDescription",bathDes);
-                                    //  in.putExtra("BathRating",rating);
                                     in.putExtra("BathType", "");
-                                    // bundle.putString("BathDescription", bathDes);
-                                    // bundle.putFloat("BathRating", rating);
-                                    // bundle.putString("BathType", BathRoomtype);
                                     startActivityForResult(in, 101);
                                 }
                             });
@@ -775,9 +910,10 @@ public class DetailBathRoomActivity extends FragmentActivity implements SwipeMen
                 break;
 
             case 1: {
-                //  ParseUser currentUser1 = ParseUser.getCurrentUser();
                 Log.e(TAG, " " + currentUser.getUsername());
-                if (currentUser.getUsername() != null) {
+                Log.d(TAG," "+email_verify);
+                fbUser = ParseFacebookUtils.isLinked(ParseUser.getCurrentUser());
+                if ((!TextUtils.isNullOrEmpty(currentUser.getUsername()) && email_verify == true)|| fbUser)  {
                     //  userName = currentUser.getUsername();
                     user_Id = currentUser.getObjectId();
                     final String rreview_id = reviewListItems.get(position).getReview_id();
@@ -885,6 +1021,8 @@ public class DetailBathRoomActivity extends FragmentActivity implements SwipeMen
 
         return false;
     }
+
+
 
     class GetBathRoomImages extends AsyncTask<Void, Void, Void> {
         @Override

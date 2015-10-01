@@ -132,7 +132,7 @@ public class BillingSecurity {
              * Generally, encryption keys / passwords should only be kept in
              * memory long enough to perform the operation they need to perform.
              */
-            String base64EncodedPublicKey = "PUT YOUR PUBLIC KEY HERE";
+            String base64EncodedPublicKey = "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAueOckvQ9oeVVFVOMCXB6BsgYpNxL11cUArO40F16gej76IUa3uDYEY+SIN+AVMtlNY/GJ78+QzC9HRnJN8CxrlrPokv0efJaXG2dW5+JDwFNi1e7M1oed98tzSGJMKPx82JEVMRsd7suEMjCU8cmNDud4F3+Sv2Z6xGosTKvESBiG9rcALNBmlNT9+qbo5GRkaPX1GUdoEUrD3Om1cOnwtjSyrxGubky3PcrO1i4gade/q9hFdGFB20pWEOyPdu+Z7ZjSenwcziVApNLuPd8yCQ0ilb7sL5AxdwGQdkpRt++g2jWOTnawt/2hXU0D2QPloHSaUZxL1/2P+IplPyqjQIDAQAB";
             PublicKey key = BillingSecurity
                     .generatePublicKey(base64EncodedPublicKey);
             verified = BillingSecurity.verify(key, signedData, signature);

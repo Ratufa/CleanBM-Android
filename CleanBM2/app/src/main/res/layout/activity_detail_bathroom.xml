@@ -109,15 +109,25 @@
                         android:text="0 Review" />
 
                     <TextView
+                        android:id="@+id/txtReportBathroom"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Report"
+                        android:textColor="@android:color/holo_red_dark"
+                        android:layout_below="@+id/txtReviewNumber"
+                        android:layout_alignParentLeft="true"
+                        android:layout_alignParentStart="true" />
+
+                    <TextView
                         android:id="@+id/txtGiveReview"
-                        android:layout_width="140dp"
+                        android:layout_width="150dp"
                         android:layout_height="30dp"
                         android:layout_alignParentEnd="true"
                         android:layout_alignParentRight="true"
                         android:layout_alignParentTop="true"
                         android:background="@drawable/login_box"
                         android:gravity="center_vertical|center"
-                        android:text="Give Review"
+                        android:text="Write a Review"
                         android:textAppearance="?android:attr/textAppearanceMedium"
                         android:textColor="@color/white"
                         android:textStyle="bold" />
@@ -135,14 +145,6 @@
                     android:layout_gravity="center|center_vertical"
                     android:background="@color/light_gray"
                     android:orientation="horizontal">
-
-            <!--        <TextView
-                        android:id="@+id/txt_LeftImgButton"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_gravity="center_vertical"
-                        android:layout_margin="5dp"
-                        android:background="@drawable/left_back_icon" />-->
 
                     <com.widgets.HorizontalListView
                         android:id="@+id/hrzListView"
@@ -164,13 +166,6 @@
                         android:gravity="center"
                         android:textColor="@android:color/holo_blue_dark"/>
 
-                   <!-- <TextView
-                        android:id="@+id/txt_RightImgButton"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_gravity="center_vertical"
-                        android:layout_margin="5dp"
-                        android:background="@drawable/right_back_icon" />-->
 
                 </LinearLayout>
 

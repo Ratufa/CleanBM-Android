@@ -2,17 +2,27 @@ package com.cleanbm;
 
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.app.PendingIntent;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.IntentSender;
+import android.content.ServiceConnection;
+import android.graphics.Paint;
 import android.graphics.drawable.BitmapDrawable;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.IBinder;
+import android.os.RemoteException;
 import android.util.Log;
 import android.view.LayoutInflater;
+import android.view.MotionEvent;
 import android.view.View;
+import android.view.WindowManager;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.EditText;
@@ -27,11 +37,18 @@ import com.Utils.Utils;
 import com.adapter.PopupMenuAdapter;
 import com.dialog.AlertDialogManager;
 import com.iap.BillingHelper;
+import com.iap.BillingService;
 import com.javabeans.Popup_Menu_Item;
 import com.parse.ParseException;
 import com.parse.ParseFacebookUtils;
 import com.parse.ParseUser;
 import com.parse.SaveCallback;
+import com.android.vending.billing.IInAppBillingService;
+
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.util.ArrayList;
 
 /**
  * Created by Kailash on 17-Sep-15.
@@ -47,6 +64,10 @@ public class MyAccountActivity extends Activity implements View.OnClickListener 
     PopupWindow popupWindow;
     private ImageView img_navigation_icon, img_Menu;
     private AlertDialogManager alert = new AlertDialogManager();
+    IInAppBillingService mService;
+    ServiceConnection mServiceConn;
+    String inappId= "com.cleanbm.premium";
+
 
     private boolean fbUser = false;
     View.OnClickListener mMenuButtonClickListener = new View.OnClickListener() {
@@ -62,6 +83,9 @@ public class MyAccountActivity extends Activity implements View.OnClickListener 
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_myaccount);
+
+        this.getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN);
+
 
         img_navigation_icon = (ImageView) findViewById(R.id.img_navigation_icon);
         img_navigation_icon.setImageResource(R.drawable.back_icon);
@@ -88,6 +112,7 @@ public class MyAccountActivity extends Activity implements View.OnClickListener 
         ParseUser currentUser = ParseUser.getCurrentUser();
 
         txtUpgradeAccount = (TextView) findViewById(R.id.txtUpgradeAccount);
+        txtUpgradeAccount.setPaintFlags(txtUpgradeAccount.getPaintFlags() | Paint.UNDERLINE_TEXT_FLAG);
         txtUpgradeAccount.setOnClickListener(this);
 
         edtName = (EditText) findViewById(R.id.edtName);
@@ -104,9 +129,34 @@ public class MyAccountActivity extends Activity implements View.OnClickListener 
         edtPassword = (EditText) findViewById(R.id.edtPassword);
         edtConfirmPassword = (EditText) findViewById(R.id.edtConfirmPassword);
 
-       // startService(new Intent(MyAccountActivity.this, BillingService.class));
+        mServiceConn = new ServiceConnection() {
+            @Override
+            public void onServiceDisconnected(ComponentName name) {
+                mService = null;
+                Log.d(TAG," Log4 ");
+            }
 
-        BillingHelper.setCompletedHandler(mTransactionHandler);
+            @Override
+            public void onServiceConnected(ComponentName name,
+                                           IBinder service) {
+                Log.d(TAG," Log5 ");
+                mService = IInAppBillingService.Stub.asInterface(service);
+
+                Log.d(TAG," Log6 ");
+            }
+        };
+
+        Intent serviceIntent = new Intent("com.android.vending.billing.InAppBillingService.BIND");
+        Log.d(TAG," Log1 ");
+        serviceIntent.setPackage("com.android.vending");
+        Log.d(TAG, " Log2 ");
+        bindService(serviceIntent, mServiceConn, Context.BIND_AUTO_CREATE);
+        Log.d(TAG, " Log3 ");
+
+
+        //startService(new Intent(MyAccountActivity.this, BillingService.class));
+
+     //   BillingHelper.setCompletedHandler(mTransactionHandler);
 
         saveChangeBtn.setOnClickListener(this);
 
@@ -304,11 +354,35 @@ public class MyAccountActivity extends Activity implements View.OnClickListener 
             } else if (data.equals(getResources().getString(R.string.Login_menu))) {
                 //   flag_for_login = 1;
                 Intent in = new Intent(getApplicationContext(), LoginActivity.class);
+                in.putExtra("BathDescription", "");
                 startActivity(in);
                 finish();
             }
         }
 
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        if (requestCode == 1001) {
+            int responseCode = data.getIntExtra("RESPONSE_CODE", 0);
+            String purchaseData = data.getStringExtra("INAPP_PURCHASE_DATA");
+            String dataSignature = data.getStringExtra("INAPP_DATA_SIGNATURE");
+            Log.d(TAG, "Log 20"+responseCode+" "+purchaseData+" "+dataSignature ); // 4 null null
+
+            if (resultCode == RESULT_OK) {
+                try {
+                    JSONObject jo = new JSONObject(purchaseData);
+                    String sku = jo.getString("productId");
+                    Log.d(TAG, "Log 21"+sku );
+                    alert.showAlertDialog(MyAccountActivity.this,"You have bought the " + sku + ". Excellent choice,adventurer!");
+                }
+                catch (JSONException e) {
+                    alert.showAlertDialog(MyAccountActivity.this, "Failed to parse purchase data.");
+                    e.printStackTrace();
+                }
+            }
+        }
     }
 
     @Override
@@ -319,22 +393,43 @@ public class MyAccountActivity extends Activity implements View.OnClickListener 
 
     @Override
     protected void onDestroy() {
-//        BillingHelper.stopService();
         super.onDestroy();
+        if (mService != null) {
+            unbindService(mServiceConn);
+        }
     }
+
+  /*  @Override
+    protected void onResume() {
+        super.onResume();
+        Log.d(TAG, "onResume");
+        popupWindow = showMenu();
+
+        popupWindow.setOnDismissListener(new PopupWindow.OnDismissListener() {
+            @Override
+            public void onDismiss() {
+                img_Menu.setImageResource(R.drawable.menu_icon);
+            }
+        });
+    }*/
+
+
 
     @Override
     public void onClick(View v) {
         switch (v.getId()) {
             case R.id.txtUpgradeAccount:
-               /* if (BillingHelper.isBillingSupported()) {
-                 //   BillingHelper.requestPurchase(MyAccountActivity.this, "android.test.purchased");
+                showUpgradeDialog();
+
+
+              /*  if (BillingHelper.isBillingSupported()) {
+                    BillingHelper.requestPurchase(MyAccountActivity.this, "com.cleanbm.premium");
                 } else {
                     Log.i(TAG, "Can't purchase on this device");
-                    //btn2.setEnabled(false); // XXX press button before service started will disable when it shouldnt
-                }
-                Toast.makeText(this, "Upgrade Button", Toast.LENGTH_SHORT).show();*/
-                showUpgradeDialog();
+                    //btn2.setEnabled(false); // XXX press button before service started will disable when it shouldnt http://stackoverflow.com/questions/6352150/in-app-billing-trouble-with-pending-intents-and-switching-activities
+                }*/
+             //   Toast.makeText(this, "Upgrade Button", Toast.LENGTH_SHORT).show();
+
                 break;
 
             case R.id.saveChangeBtn:
@@ -345,23 +440,28 @@ public class MyAccountActivity extends Activity implements View.OnClickListener 
 
                 if(!fbUser){
 
-                if (name.length() != 0 && pwd.length() != 0 && confirmPwd.length() != 0 && email.length() != 0) {
+                if (name.length() != 0 && pwd.length() != 0  && confirmPwd.length() != 0 && email.length() != 0) {
 
                     if (pwd.equals(confirmPwd))
                         saveData(name, pwd, email);
                     else
-                        Toast.makeText(getApplicationContext(), "Password not matched", Toast.LENGTH_SHORT).show();
-
+                        alert.showAlertDialog(this, getResources().getString(R.string.passwordmismatch));
                 } else {
-                    if (name.length()==0){
-                        Toast.makeText(getApplicationContext(), "Name not specified", Toast.LENGTH_SHORT).show();
-                    }else  if (pwd.length()==0){
-                        Toast.makeText(getApplicationContext(), "Password not specified", Toast.LENGTH_SHORT).show();
-                    }else  if (confirmPwd.length()==0){
-                        Toast.makeText(getApplicationContext(), "Password not matched", Toast.LENGTH_SHORT).show();
-                    }else  if (email.length()==0){
-                        Toast.makeText(getApplicationContext(), "Email not specified", Toast.LENGTH_SHORT).show();
-                    }
+                    if (name.length() <= 0) {
+                        alert.showAlertDialog(this, getResources().getString(R.string.enter_name));
+                    } else if (email.length() <= 0) {
+                        alert.showAlertDialog(this, getResources().getString(R.string.enter_email));
+                    } else if (!Utils.isValidEmailAddress(email)) {
+                        alert.showAlertDialog(this, getResources().getString(R.string.enter_email));
+                    }else  if (pwd.length()<=0){
+                        alert.showAlertDialog(this, getResources().getString(R.string.enter_Confirmpassword));
+                    }else if (pwd.length() < 4) {
+                        alert.showAlertDialog(this, getResources().getString(R.string.enter_password));
+                    } else if (confirmPwd.length() <= 0) {
+                        alert.showAlertDialog(this, getResources().getString(R.string.enter_Confirmpassword));
+                    } else if (!(name.equals(confirmPwd))) {
+                            alert.showAlertDialog(this, getResources().getString(R.string.passwordmismatch));
+                        }
 
                 }
                 }else {
@@ -380,6 +480,14 @@ public class MyAccountActivity extends Activity implements View.OnClickListener 
         }
     }
 
+    @Override
+    public boolean onTouchEvent(MotionEvent event) {
+        InputMethodManager imm = (InputMethodManager) getSystemService(Context.
+                INPUT_METHOD_SERVICE);
+        imm.hideSoftInputFromWindow(getCurrentFocus().getWindowToken(), 0);
+        return true;
+    }
+
     private String TAG = getClass().getSimpleName();
 
     public Handler mTransactionHandler = new Handler() {
@@ -395,7 +503,7 @@ public class MyAccountActivity extends Activity implements View.OnClickListener 
     };
 
     private void showItem() {
-        //purchaseableItem.setVisibility(View.VISIBLE);
+       // purchaseableItem.setVisibility(View.VISIBLE);
     }
 
     private void saveData(String name, String password, String email) {
@@ -429,9 +537,59 @@ public class MyAccountActivity extends Activity implements View.OnClickListener 
                 .setCancelable(false)
                 .setPositiveButton("Yes",new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface dialog,int id) {
-                        // if this button is clicked, close
-                        // current activity
-                     dialog.dismiss();
+                        ArrayList<String> skuList = new ArrayList<String> ();
+                        Log.d(TAG,"Log 11");
+                        skuList.add(inappId);
+                        Log.d(TAG, "Log 12"+inappId+skuList.size());
+                        // skuList.add("gas");
+                        Bundle querySkus = new Bundle();
+                        querySkus.putStringArrayList("ITEM_ID_LIST", skuList);
+                        Log.d(TAG, "Log 13");
+                        try {
+                            Bundle skuDetails = mService.getSkuDetails(3,
+                                    getPackageName(), "subs", querySkus);
+
+                   /* Bundle skuDetails = mService.getBuyIntent(3, getPackageName(),
+                            inappId, "subs","bGoa+V7g/yqDXvKRqq+JTFn4uQZbPiQJo4pf9RzJ");*/
+                            Log.d(TAG, "Log 14"+(skuDetails==null) );
+                            int response = skuDetails.getInt("RESPONSE_CODE");
+                            Log.d(TAG, "Log 15"+response );
+                            if (response == 0) {
+                                Log.d(TAG, "Log 16" );
+                                ArrayList<String> responseList
+                                        = skuDetails.getStringArrayList("DETAILS_LIST");
+                                Log.d(TAG, "Log 17"+responseList.size()+" "+responseList.toString() );
+
+                                for (String thisResponse : responseList) {
+                                    JSONObject object = new JSONObject(thisResponse);
+                                    String sku = object.getString("productId");
+                                    String price = object.getString("price");
+                                    Log.d(TAG, "Log 18"+sku+" "+price );
+                                    if (sku.equals(inappId))
+                                    {
+                                        System.out.println("Price"+price);
+                                        Bundle buyIntentBundle = mService.getBuyIntent(3, getPackageName(),
+                                                sku, "subs", "bGoa+V7g/yqDXvKRqq+JTFn4uQZbPiQJo4pf9RzJ");
+                                        //mPremiumUpgradePrice = price;
+                                        PendingIntent pendingIntent = buyIntentBundle.getParcelable("BUY_INTENT");
+                                        Log.d(TAG, "Log 19" + sku + " " + price);
+                                        startIntentSenderForResult(pendingIntent.getIntentSender(),
+                                                1001, new Intent(), Integer.valueOf(0), Integer.valueOf(0),
+                                                Integer.valueOf(0));
+                                        Log.d(TAG, "Log 20" + sku + " " + price);
+
+
+                                    }
+
+                                }
+                            }
+                        } catch (RemoteException e) {
+                            e.printStackTrace();
+                        } catch (JSONException e) {
+                            e.printStackTrace();
+                        } catch (IntentSender.SendIntentException e) {
+                            e.printStackTrace();
+                        }
                     }
                 })
                 .setNegativeButton("No",new DialogInterface.OnClickListener() {

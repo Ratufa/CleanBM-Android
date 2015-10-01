@@ -13,11 +13,13 @@ import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.provider.MediaStore;
+import android.text.method.ScrollingMovementMethod;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.WindowManager;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.view.inputmethod.InputMethodManager;
@@ -125,52 +127,58 @@ public class AddLocation extends Activity {
                         // Get the current user detail from parse
                         ParseUser currentUser = ParseUser.getCurrentUser();
                         Log.e(TAG, " " + currentUser.getUsername());
-                        if (!TextUtils.isNullOrEmpty(currentUser.getUsername())) {
-                            // If current user id login then add the location to the parse database
-                            userName = currentUser.getString("name");
-                            // Getting current user Object id
-                            user_Id = currentUser.getObjectId();
-                            // Calling the Async class which put all the data to the parse Table
-                            HandlerAsync handlerAsync = new HandlerAsync();
-                            handlerAsync.execute(edtLocationName.getText().toString());
-                        } else {
+                        Boolean email_verify = currentUser.getBoolean("emailVerified");
+                        Log.d(TAG," "+email_verify);
+                        fbUser = ParseFacebookUtils.isLinked(ParseUser.getCurrentUser());
+
+                            if ((!TextUtils.isNullOrEmpty(currentUser.getUsername()) && email_verify == true)|| fbUser) {
+                                // If current user id login then add the location to the parse database
+                                userName = currentUser.getString("name");
+                                // Getting current user Object id
+                                user_Id = currentUser.getObjectId();
+                                // Calling the Async class which put all the data to the parse Table
+                                HandlerAsync handlerAsync = new HandlerAsync();
+                                handlerAsync.execute(edtLocationName.getText().toString());
+                            } else {
                             /*
                                 If user is not Login, Then this pop up will be open to show Login First.
                             */
-                            Log.e(TAG, "please login");
-                            AlertDialog.Builder alertDialog = new AlertDialog.Builder(AddLocation.this);
-                            // Setting Dialog Message
-                            alertDialog.setMessage(getResources().getString(R.string.login_first_message));
-                            // Setting Positive "Yes" Button
-                            alertDialog.setPositiveButton("Login",
-                                    new DialogInterface.OnClickListener() {
-                                        public void onClick(DialogInterface dialog, int which) {
-                                            //finish();
-                                            String bathDes = edtBathRoomDescrip.getText().toString();
-                                            float rating = rate_BathRoom.getRating();
-                                            Log.d(TAG, " detail on click on login " + BathRoomDescription + " " + rating + " " + BathRoomtype);
+                                Log.e(TAG, "please login");
+                                AlertDialog.Builder alertDialog = new AlertDialog.Builder(AddLocation.this);
+                                // Setting Dialog Message
+                                alertDialog.setMessage(getResources().getString(R.string.login_first_message));
+                                // Setting Positive "Yes" Button
+                                alertDialog.setPositiveButton("Login",
+                                        new DialogInterface.OnClickListener() {
+                                            public void onClick(DialogInterface dialog, int which) {
+                                                //finish();
+                                                String bathDes = edtBathRoomDescrip.getText().toString();
+                                                float rating = rate_BathRoom.getRating();
+                                                Log.d(TAG, " detail on click on login " + BathRoomDescription + " " + rating + " " + BathRoomtype);
                                             /*
                                                 Store all the exisiting data filled in the form
                                                 and intent to the LoginActivity
                                             */
-                                            Intent in = new Intent(AddLocation.this, LoginActivity.class);
-                                            in.putExtra("BathDescription", bathDes);
-                                            in.putExtra("BathRating", rating);
-                                            in.putExtra("BathType", BathRoomtype);
-                                            startActivityForResult(in, 101);
-                                        }
-                                    });
-                            // Setting Negative "NO" Button
-                            alertDialog.setNegativeButton("Cancel",
-                                    new DialogInterface.OnClickListener() {
-                                        public void onClick(DialogInterface dialog, int which) {
-                                            // Write your code here to invoke NO event
-                                            dialog.cancel();
-                                        }
-                                    });
-                            // Showing Alert Message
-                            alertDialog.show();
-                        }
+                                                Intent in = new Intent(AddLocation.this, LoginActivity.class);
+                                                in.putExtra("BathDescription", bathDes);
+                                                in.putExtra("BathRating", rating);
+                                                in.putExtra("BathType", BathRoomtype);
+                                                startActivityForResult(in, 101);
+                                            }
+                                        });
+                                // Setting Negative "NO" Button
+                                alertDialog.setNegativeButton("Cancel",
+                                        new DialogInterface.OnClickListener() {
+                                            public void onClick(DialogInterface dialog, int which) {
+                                                // Write your code here to invoke NO event
+                                                dialog.cancel();
+                                            }
+                                        });
+                                // Showing Alert Message
+                                alertDialog.show();
+                            }
+
+                        //}
                     } else {
                         // When internet is not present, this else block will be run.
                         alert.showAlertDialog(AddLocation.this, getResources().getString(R.string.connection_not_available));
@@ -221,6 +229,7 @@ public class AddLocation extends Activity {
         if(resultCode==RESULT_OK) {
             if (requestCode == CAPTURE_IMAGE_ACTIVITY_REQUEST_CODE) {
                 if (data != null) {
+                    hrzListView.setVisibility(View.VISIBLE);
                     Bitmap photo = (Bitmap) data.getExtras().get("data");
                     ByteArrayOutputStream bytes = new ByteArrayOutputStream();
                     photo.compress(Bitmap.CompressFormat.JPEG, 100, bytes);
@@ -250,6 +259,7 @@ public class AddLocation extends Activity {
                 imagesBean.setUri(Uri.fromFile(new File(images.get(i).path)));
                 imagesList.add(imagesBean);
             }
+            hrzListView.setVisibility(View.VISIBLE);
             // PhotoAdapter is custom adapter for showing images on the Horizontal listview.
             photoAdapter1 = new PhotoAdapter1();
             hrzListView.setAdapter(photoAdapter1);
@@ -262,10 +272,13 @@ public class AddLocation extends Activity {
         }
     }
 
+
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_add_location);
+        this.getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN);
 
         // initialize pop up window
         popupWindow = showMenu();
@@ -320,6 +333,9 @@ public class AddLocation extends Activity {
                     public void onClick(View view) {
                         imagesList.remove(position);
                         photoAdapter1.notifyDataSetChanged();
+                        if (imagesList.size() == 0) {
+                            hrzListView.setVisibility(View.GONE);
+                        }
                     }
                 });
                 return false;
@@ -361,35 +377,34 @@ public class AddLocation extends Activity {
         radioGrpBestBathroom.setOnCheckedChangeListener(new RadioGroup.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(RadioGroup group, int checkedId) {
-                if(checkedId==R.id.radioMale)
-                {
-                    bathroom_best_for="Male";
-                }
-                else if(checkedId==R.id.radioFemale)
-                {
-                    bathroom_best_for="Female";
-                }
-                else if(checkedId==R.id.radioBoth)
-                {
-                    bathroom_best_for="Both";
+                if (checkedId == R.id.radioMale) {
+                    bathroom_best_for = "Male";
+                } else if (checkedId == R.id.radioFemale) {
+                    bathroom_best_for = "Female";
+                } else if (checkedId == R.id.radioBoth) {
+                    bathroom_best_for = "Both";
                 }
             }
         });
+      //  hideSoftKeyboard();
          /*
             setting the id of bathroom description edit text
             and after enter bathroom description,keyboard hide.
         */
         edtBathRoomDescrip = (EditText) findViewById(R.id.edtBathRoomDescription);
         Utils.hideKeyBoard(getApplicationContext(), edtBathRoomDescrip);
+        edtBathRoomDescrip.setMovementMethod(new ScrollingMovementMethod());
         /*
             Setting the Location Name from the Intent.
             Add new Location class pass the address and seting here.
         */
         edtLocationName = (EditText) findViewById(R.id.edtLocationName);
+        Utils.hideKeyBoard(getApplicationContext(), edtLocationName);
         edtLocationName.setText(getIntent().getStringExtra("Address"));
 
         txtAddThisLocation = (TextView) findViewById(R.id.txt_AddLocation);
         txtAddThisLocation.setOnClickListener(mButtonClickListener);
+        Utils.hideKeyBoard(getApplicationContext(), txtAddThisLocation);
 
         ParseObject parseObject = new ParseObject("User");
         parseObject.fetchInBackground(new GetCallback<ParseObject>() {
@@ -408,7 +423,22 @@ public class AddLocation extends Activity {
         /*
             Parent scroll view can able to scroll.
        */
-        scrollView = (ScrollView) findViewById(R.id.scrollView);
+
+   /*     edtBathRoomDescrip.setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                if (v.getId() == R.id.edtBathRoomDescription) {
+                    v.getParent().requestDisallowInterceptTouchEvent(true);
+                    switch (event.getAction() & MotionEvent.ACTION_MASK) {
+                        case MotionEvent.ACTION_UP:
+                            v.getParent().requestDisallowInterceptTouchEvent(false);
+                            break;
+                    }
+                }
+                return false;
+            }
+        });*/
+       scrollView = (ScrollView) findViewById(R.id.scrollView);
         scrollView.setOnTouchListener(new View.OnTouchListener() {
             @Override
             public boolean onTouch(View v, MotionEvent event) {
@@ -614,6 +644,7 @@ public class AddLocation extends Activity {
             } else if (data.equals(getResources().getString(R.string.Login_menu))) {
                 //   flag_for_login = 1;
                 Intent in = new Intent(getApplicationContext(), LoginActivity.class);
+                in.putExtra("BathDescription", "");
                 startActivity(in);
                 finish();
             }
@@ -628,11 +659,28 @@ public class AddLocation extends Activity {
     }
 
     @Override
-    public boolean onTouchEvent(MotionEvent event) {
-        InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
-        imm.hideSoftInputFromWindow(getCurrentFocus().getWindowToken(), 0);
-        return true;
+    protected void onResume() {
+        super.onResume();
+        // initialize pop up window
+        popupWindow = showMenu();
+        popupWindow.setOnDismissListener(new PopupWindow.OnDismissListener() {
+            @Override
+            public void onDismiss() {
+                img_Menu.setImageResource(R.drawable.menu_icon);
+            }
+        });
     }
+    /**
+     * Hides the soft keyboard
+     */
+    public void hideSoftKeyboard() {
+        if(getCurrentFocus()!=null) {
+            InputMethodManager inputMethodManager = (InputMethodManager) getSystemService(INPUT_METHOD_SERVICE);
+            inputMethodManager.hideSoftInputFromWindow(getCurrentFocus().getWindowToken(), 0);
+        }
+    }
+
+
 
         /*
             Adding all the detail of location in parse table
@@ -641,7 +689,7 @@ public class AddLocation extends Activity {
         @Override
         protected void onPreExecute() {
             super.onPreExecute();
-            Utils.setProgress(AddLocation.this, true);
+        //    Utils.setProgress(AddLocation.this, true);
           //  setProgress(true);
         }
 
@@ -737,7 +785,7 @@ public class AddLocation extends Activity {
         @Override
         protected void onPostExecute(String s) {
             super.onPostExecute(s);
-            Utils.setProgress(AddLocation.this,false);
+         //   Utils.setProgress(AddLocation.this,false);
            // setProgress(false);
             edtBathRoomDescrip.setText("");
             rate_BathRoom.setRating(0);
@@ -755,7 +803,8 @@ public class AddLocation extends Activity {
                         public void onClick(DialogInterface dialog, int which) {
                             dialog.cancel();
                             Intent in = new Intent();
-                            setResult(111, in);
+                            in.putExtra("MESSAGE","Submit");
+                            setResult(RESULT_OK, in);
                             finish();
                         }
                     });

@@ -181,7 +181,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:clickable="true"
-                    android:text="Bathroom Best for :"
+                    android:text="Restroom Options :"
                     android:textColor="@color/black" />
 
                 <RadioGroup
@@ -282,6 +282,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="151dp"
                 android:divider="#878787"
+                android:visibility="gone"
                 widget:dividerWidth="2dp" />
 
 

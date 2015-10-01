@@ -1,6 +1,7 @@
 package com.cleanbm;
 
 import android.app.AlertDialog;
+import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -31,16 +32,30 @@ import com.dialog.AlertDialogManager;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.LatLngBounds;
+import com.google.android.gms.maps.model.Marker;
+import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.VisibleRegion;
+import com.javabeans.BathRoomDetail;
 import com.javabeans.Popup_Menu_Item;
+import com.parse.FindCallback;
+import com.parse.ParseException;
 import com.parse.ParseFacebookUtils;
+import com.parse.ParseGeoPoint;
+import com.parse.ParseObject;
+import com.parse.ParseQuery;
 import com.parse.ParseUser;
 
+import net.yazeed44.imagepicker.util.Util;
+
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Timer;
+import java.util.TimerTask;
 
 /**
  * Created by Ratufa.Paridhi on 8/19/2015.
@@ -53,7 +68,7 @@ public class AddNewLocationActivity extends FragmentActivity {
     double lat, longg;
     String full_address = "";
     private GoogleMap mMap;
-    private ImageView img_Menu, img_navigation_icon;
+    private ImageView img_Menu, img_navigation_icon,img_add_new_location;
     PopupMenuAdapter adapter;
     private AlertDialogManager alert = new AlertDialogManager();
 
@@ -117,6 +132,8 @@ public class AddNewLocationActivity extends FragmentActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_add_new_location);
 
+        img_add_new_location = (ImageView)findViewById(R.id.img_add_new_location);
+
         // initialize pop up window
         popupWindow = showMenu();
         // On Dismiss pop up, icon get changed.
@@ -168,8 +185,6 @@ public class AddNewLocationActivity extends FragmentActivity {
                 img_Menu.setImageResource(R.drawable.menu_icon);
             }
             popupWindow.showAsDropDown(v, -5, 0);
-
-
         }
     };
 
@@ -344,6 +359,7 @@ public class AddNewLocationActivity extends FragmentActivity {
             } else if (data.equals(getResources().getString(R.string.Login_menu))) {
                 //   flag_for_login = 1;
                 Intent in = new Intent(getApplicationContext(), LoginActivity.class);
+                in.putExtra("BathDescription", "");
                 startActivity(in);
                 finish();
             }
@@ -355,6 +371,19 @@ public class AddNewLocationActivity extends FragmentActivity {
     public void onBackPressed() {
         super.onBackPressed();
         finish();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        // initialize pop up window
+        popupWindow = showMenu();
+        popupWindow.setOnDismissListener(new PopupWindow.OnDismissListener() {
+            @Override
+            public void onDismiss() {
+                img_Menu.setImageResource(R.drawable.menu_icon);
+            }
+        });
     }
 
     /*
@@ -393,16 +422,181 @@ public class AddNewLocationActivity extends FragmentActivity {
             }
         }
     }
+    String  TAG ="AddNewLocationActivity";
+    ArrayList<BathRoomDetail> array_bathDetails = new ArrayList<BathRoomDetail>();
+    ProgressDialog pd = null;
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode == 111) {
-            if (data != null) {
-                finish();
+        Log.d(TAG," "+requestCode+" "+resultCode);
+        if(resultCode==RESULT_OK) {
+            if (requestCode == 111) {
+                if (data != null) {
+                    String message=data.getStringExtra("MESSAGE");
+                    if(message.equalsIgnoreCase("Submit")) {
+                        add_this_location.setVisibility(View.GONE);
+                        img_add_new_location.setVisibility(View.GONE);
+                        CameraPosition cameraPosition = new CameraPosition.Builder().target(new LatLng(lat, longg)).zoom(12).build();
+                        mMap.animateCamera(CameraUpdateFactory.newCameraPosition(cameraPosition));
+
+                        Log.d("AddNewLocation", "Intent Come from add location" + lat + longg);
+
+                        if (mMap != null) {
+                            mMap.clear();
+                        }
+
+                        new AsyncTask<Void,Void,Void>()
+                        {
+                            @Override
+                            protected void onPreExecute() {
+                                super.onPreExecute();
+                                setProgress(true);
+                            }
+
+                            @Override
+                            protected Void doInBackground(Void... params) {
+                                // Get the Lat and long
+                                ParseQuery<ParseObject> query = ParseQuery.getQuery("BathRoomDetail");
+                                ParseGeoPoint parseGeoPoint = new ParseGeoPoint(lat, longg);
+                                query.whereWithinKilometers("bathLocation", parseGeoPoint, 10);
+                                query.findInBackground(new FindCallback<ParseObject>()
+
+                                {
+                                    @Override
+                                    public void done(List<ParseObject> list, ParseException e) {
+                                        if (e == null) {
+                                            ParseGeoPoint userLocation;
+                                            // array_bathDetails.clear();
+                                            for (int i = 0; i < list.size(); i++) {
+                                                //adresGet = adresGet + MyObject.get(i).getString("Adres") +"\n";
+
+                                                userLocation = list.get(i).getParseGeoPoint("bathLocation");
+                                                double geo_lat = userLocation.getLatitude(); //(double) (userLocation.getLatitude()*1E6);
+                                                double geo_long = userLocation.getLongitude(); //(double) (userLocation.getLongitude()*1E6);
+                                                //point1 = new GeoPoint(geo1Int, geo2Int);
+                                                // String bath_name = list.get(i).getString("bathLocationName");
+
+                                                String bath_full_address = list.get(i).getString("bathFullAddress");
+                                                String bath_room_description = list.get(i).getString("description");
+                                                double bath_rating = list.get(i).getDouble("bathRating");
+                                                String bath_id = list.get(i).getObjectId();
+
+                                                Log.e(TAG, "Data" + " " + bath_full_address + " " + bath_rating);
+                                                Log.e(TAG, "Lat n long" + geo_lat + " " + geo_long + bath_id);
+
+
+                                                BathRoomDetail bathRoomDetail = new BathRoomDetail(bath_id, bath_rating, bath_full_address, geo_lat, geo_long, "BathRoom", bath_room_description);
+                                                array_bathDetails.add(bathRoomDetail);
+
+                                                //    setUpAllMarker(geo_lat, geo_long, i);
+
+                                                MarkerOptions marker;
+
+                                                if (geo_lat == lat && geo_long == longg) {
+
+                                                    Log.d(TAG + "Set_allmarker", lat + " " + longg + " " + array_bathDetails.get(i).getBath_full_address());
+                                                    marker = new MarkerOptions().position(new LatLng(geo_lat, geo_long)).title(bath_full_address);
+                                                    marker.icon(BitmapDescriptorFactory.fromResource(R.drawable.current_location_icon));
+                                                    CameraPosition cameraPosition = new CameraPosition.Builder().target(new LatLng(geo_lat, geo_long)).zoom(12).build();
+                                                    mMap.animateCamera(CameraUpdateFactory.newCameraPosition(cameraPosition));
+
+                                                    mMap.setMyLocationEnabled(true);
+                                                    mMap.getUiSettings().setZoomControlsEnabled(true);
+                                                    mMap.addMarker(marker);
+                                                } else {
+
+                                                    marker = new MarkerOptions().position(new LatLng(geo_lat, geo_long)).title(bath_full_address);
+                                                    marker.icon(BitmapDescriptorFactory.fromResource(R.drawable.detail_bathroom_icon));
+                                                    mMap.addMarker(marker);
+                                                }
+
+                                            }
+
+                                            mMap.setOnInfoWindowClickListener(new GoogleMap.OnInfoWindowClickListener() {
+                                                @Override
+                                                public void onInfoWindowClick(Marker marker) {
+                                                    Log.d(TAG + "marker title", marker.getTitle());
+                                                    BathRoomDetail details = GetDisplayUser(marker.getTitle());
+                                                    Log.d(TAG, " on click " + details.getBath_id());
+                                                    Intent intent = new Intent(AddNewLocationActivity.this, DetailBathRoomActivity.class);
+                                                    intent.putExtra("DATA", details);
+                                                    startActivity(intent);
+
+                                                }
+                                            });
+                                        }
+                                    }
+                                });
+                                return null;
+                            }
+
+                            @Override
+                            protected void onPostExecute(Void aVoid) {
+                                super.onPostExecute(aVoid);
+                               setProgress(false);
+                            }
+                        }.execute();
+
+                    }
+
+                }
             }
         }
 
+    }
+
+    public void setProgress(boolean visibility) {
+        if (visibility) {
+            try {
+                if (pd == null) {
+                    pd = new ProgressDialog(AddNewLocationActivity.this);
+                    pd.setTitle("");
+                    pd.setMessage(getString(R.string.loading));
+                    pd.setCancelable(false);
+                    pd.setIndeterminateDrawable(getResources().getDrawable(R.drawable.progress_dialog));
+                    pd.setCancelable(true);
+                    if (!pd.isShowing())
+                        pd.show();
+                } else {
+                    try {
+                        if (!pd.isShowing())
+                            pd.show();
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                }
+            } catch (Exception e) {
+                Utils.sendExceptionReport(e, getApplicationContext());
+                e.printStackTrace();
+            }
+        } else {
+            try {
+                long delayInMillis = 5000;
+                Timer timer = new Timer();
+                timer.schedule(new TimerTask() {
+                    @Override
+                    public void run() {
+                        pd.dismiss();
+                    }
+                }, delayInMillis);
+               /* if (pd.isShowing())
+                    pd.dismiss();*/
+            } catch (Exception e) {
+                Utils.sendExceptionReport(e, getApplicationContext());
+                e.printStackTrace();
+            }
+        }
+    }
+
+    private BathRoomDetail GetDisplayUser(String title) {
+        BathRoomDetail details = new BathRoomDetail();
+        for (BathRoomDetail bathRoomDetail : array_bathDetails) {
+            if (bathRoomDetail.getBath_full_address().contains(title)) {
+                details = bathRoomDetail;
+            }
+        }
+        return details;
     }
     // Finding address using reverse Geo Coding
     private class ReverseGeocodingTask extends AsyncTask<LatLng, Void, String> {

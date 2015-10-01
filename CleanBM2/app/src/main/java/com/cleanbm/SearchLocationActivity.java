@@ -22,12 +22,14 @@ import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.WindowManager;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.AutoCompleteTextView;
+import android.widget.EditText;
 import android.widget.Filter;
 import android.widget.Filterable;
 import android.widget.ImageView;
@@ -114,7 +116,7 @@ public class SearchLocationActivity extends FragmentActivity {
     final int PLACES_DETAILS = 1;
     String term,reference;
 
-    public static final String LOGIN_PREFERENCES = "LoginPrefs";
+    public static final String LOGIN_PREFERENCES = "my_preferences";
 
     private AddressBean address = new AddressBean();
 
@@ -122,6 +124,7 @@ public class SearchLocationActivity extends FragmentActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_search);
+        this.getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN);
 
         // initialize pop up window
         popupWindow = showMenu();
@@ -283,7 +286,10 @@ public class SearchLocationActivity extends FragmentActivity {
 
     }
 
+
+
     private boolean fbUser = false;
+    Boolean email_verify;
     public PopupWindow showMenu() {
         //Initialize a pop up window type
         LayoutInflater inflater = (LayoutInflater) SearchLocationActivity.this.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
@@ -293,7 +299,7 @@ public class SearchLocationActivity extends FragmentActivity {
         ParseUser currentUser = ParseUser.getCurrentUser();
         Popup_Menu_Item menus[] = new Popup_Menu_Item[5];
         fbUser = ParseFacebookUtils.isLinked(ParseUser.getCurrentUser());
-        Boolean email_verify = currentUser.getBoolean("emailVerified");
+        email_verify = currentUser.getBoolean("emailVerified");
         Log.d("Splash screen "," "+email_verify);
         if ((currentUser.getUsername() != null && email_verify==true) || fbUser) {
             menus = new Popup_Menu_Item[]{
@@ -413,8 +419,8 @@ public class SearchLocationActivity extends FragmentActivity {
                 Intent intent = new Intent(getApplicationContext(), SupportActivity.class);
                 startActivity(intent);
             } else if (data.equals(getString(R.string.my_account))) {
-                Intent intent = new Intent(getApplicationContext(), MyAccountActivity.class);
-                startActivity(intent);
+                    Intent intent = new Intent(getApplicationContext(), MyAccountActivity.class);
+                    startActivity(intent);
             } else if (data.equals(getString(R.string.Logout))) {
                 if (Utils.isInternetConnected(SearchLocationActivity.this)) {
                     AlertDialog.Builder alertDialog = new AlertDialog.Builder(SearchLocationActivity.this);
@@ -455,11 +461,13 @@ public class SearchLocationActivity extends FragmentActivity {
             } else if (data.equals(getResources().getString(R.string.Login_menu))) {
              //   flag_for_login = 1;
                 Intent in = new Intent(getApplicationContext(), LoginActivity.class);
+                in.putExtra("BathDescription", "");
                 startActivity(in);
             }
         }
 
     }
+
 
     @Override
     public boolean onTouchEvent(MotionEvent event) {
@@ -477,11 +485,11 @@ public class SearchLocationActivity extends FragmentActivity {
         alertDialog.setPositiveButton("YES",
                 new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface dialog, int which) {
-                        SharedPreferences preferences = getSharedPreferences(LOGIN_PREFERENCES, MODE_PRIVATE);
+                       /* SharedPreferences preferences = getSharedPreferences(LOGIN_PREFERENCES, MODE_PRIVATE);
                         // first time
                         SharedPreferences.Editor editor = preferences.edit();
                         editor.putBoolean("RanBefore", false);
-                        editor.commit();
+                        editor.commit();*/
                         finish();
                     }
                 });
@@ -504,6 +512,19 @@ public class SearchLocationActivity extends FragmentActivity {
         //  super.onBackPressed();
         backButtonHandler();
         return;
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        // initialize pop up window
+        popupWindow = showMenu();
+        popupWindow.setOnDismissListener(new PopupWindow.OnDismissListener() {
+            @Override
+            public void onDismiss() {
+                img_Menu.setImageResource(R.drawable.menu_icon);
+            }
+        });
     }
 
     /**

@@ -277,11 +277,26 @@ Boolean fbUser =false;
             } else if (data.equals(getResources().getString(R.string.Login_menu))) {
                 //   flag_for_login = 1;
                 Intent in = new Intent(getApplicationContext(), LoginActivity.class);
+                in.putExtra("BathDescription", "");
                 startActivity(in);
                 finish();
             }
         }
 
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        Log.d("", "onResume");
+        popupWindow = showMenu();
+
+        popupWindow.setOnDismissListener(new PopupWindow.OnDismissListener() {
+            @Override
+            public void onDismiss() {
+                img_Menu.setImageResource(R.drawable.menu_icon);
+            }
+        });
     }
     
     public void DisplayData()

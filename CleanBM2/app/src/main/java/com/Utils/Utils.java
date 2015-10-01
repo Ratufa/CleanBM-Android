@@ -99,9 +99,10 @@ public class Utils {
 
         return false;
     }
+    static ProgressDialog pd = null;
 
     public static void setProgress(Context context,boolean visibility) {
-       ProgressDialog pd = null;
+
         if (visibility) {
             try {
                 if (pd == null) {
@@ -128,7 +129,8 @@ public class Utils {
                     pd.dismiss();
             } catch (Exception e) {
                 Utils.sendExceptionReport(e, context);
-                e.printStackTrace();
+               Log.e("", e.getLocalizedMessage());
+
             }
         }
     }

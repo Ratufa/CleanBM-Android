@@ -3,6 +3,7 @@ package com.cleanbm;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.ProgressDialog;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -11,7 +12,9 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.MotionEvent;
 import android.view.View;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -40,7 +43,7 @@ public class LoginActivity extends Activity {
     TextView txtLogin,txtSignUp, txtForgetPass,txtFbLogin,txtSkip;
     EditText edtEmail, edtPassword;
     String email,password;
-    public static final String LOGIN_PREFERENCES = "LoginPrefs";
+    public static final String LOGIN_PREFERENCES = "my_preferences";
     private SharedPreferences.Editor loginPrefEditor;
     private Boolean saveLogin;
     private ProgressDialog pd;
@@ -48,6 +51,7 @@ public class LoginActivity extends Activity {
     AlertDialogManager alert = new AlertDialogManager();
 
     Boolean fbUser=false;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -76,15 +80,23 @@ public class LoginActivity extends Activity {
 
         txtSkip =(TextView)findViewById(R.id.txtSkip);
         txtSkip.setOnClickListener(mButtonClick);
-       String username= ParseUser.getCurrentUser().getUsername();
-        Log.d("LoginActivity"," "+username+" "+fbUser);
+        String username= ParseUser.getCurrentUser().getUsername();
+        Log.d("LoginActivity"," "+(username==null)+" "+!fbUser+" "+isFirstTime()+" "+( (username==null) && !fbUser)+" "+( (username==null) && isFirstTime()));
         fbUser = ParseFacebookUtils.isLinked(ParseUser.getCurrentUser());
-        if(username==null && fbUser==false && isFirstTime())
-      /*  if (isFirstTime())*/ {
-            // show dialog
-            txtSkip.setVisibility(View.VISIBLE);
+        if((username==null) && !fbUser)
+         {
+             Log.d("Login", "visible"+isFirstTime());
+             if(isFirstTime()) {
+                 Log.d("Login", "visible"+isFirstTime());
+                 txtSkip.setVisibility(View.VISIBLE);
+             }
         }
         else
+        {
+            Log.d("Login","Not visible");
+            txtSkip.setVisibility(View.GONE);
+        }
+        if (getIntent().getExtras() != null)
         {
             txtSkip.setVisibility(View.GONE);
         }
@@ -118,11 +130,15 @@ public class LoginActivity extends Activity {
             }
             else if(v == txtSignUp)
             {
+                edtEmail.setText("");
+                edtPassword.setText("");
                 Intent intent = new Intent(getApplicationContext(),RegistrationActivity.class);
                 startActivity(intent);
             }
             else if(v == txtForgetPass)
             {
+                edtPassword.setText("");
+                edtEmail.setText("");
                 mEtForgotPassword = new EditText(LoginActivity.this);
                 mEtForgotPassword.setText("");
                 mEtForgotPassword.setHint(getString(R.string.enter_email_hint));
@@ -131,6 +147,8 @@ public class LoginActivity extends Activity {
             else if(v == txtFbLogin)
             { //https://chintankhetiya.wordpress.com/2013/12/26/how-to-create-facebook-hash-key-in-android/
                 if(Utils.isInternetConnected(LoginActivity.this)) {
+                    edtEmail.setText("");
+                    edtPassword.setText("");
                     //  setProgress(true);
                     List<String> permissions = Arrays.asList("public_profile", "email");
                     // NOTE: for extended permissions, like "user_about_me", your app must be reviewed by the Facebook team
@@ -169,10 +187,15 @@ public class LoginActivity extends Activity {
                                                         //  user.setEmail(email);
                                                         //user.put("name", name);
                                                         parseUser.saveInBackground();
+                                                        if (getIntent().getExtras() != null) {
+                                                            finish();
+                                                        }
+                                                        else {
                                                             Intent in = new Intent(getApplicationContext(), SearchLocationActivity.class);
                                                             in.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
                                                             startActivity(in);
                                                             finish();
+                                                        }
                                                     } catch (JSONException e1) {
                                                         e1.printStackTrace();
                                                     }
@@ -246,18 +269,29 @@ public class LoginActivity extends Activity {
         }
     };
 
+    @Override
+    public boolean onTouchEvent(MotionEvent event) {
+        InputMethodManager imm = (InputMethodManager) getSystemService(Context.
+                INPUT_METHOD_SERVICE);
+        imm.hideSoftInputFromWindow(getCurrentFocus().getWindowToken(), 0);
+        return true;
+    }
+
+
     private boolean isFirstTime()
     {
         SharedPreferences preferences = getSharedPreferences(LOGIN_PREFERENCES, MODE_PRIVATE);
-        boolean ranBefore = preferences.getBoolean("RanBefore", false);
-        if (!ranBefore) {
+        boolean ranBefore = preferences.getBoolean("is_first", true);
+        Log.d("Login"," "+!ranBefore+" real value "+ranBefore);
+        if (ranBefore) {
             // first time
-            txtSkip.setVisibility(View.VISIBLE);
+        //    txtSkip.setVisibility(View.VISIBLE);
             SharedPreferences.Editor editor = preferences.edit();
-            editor.putBoolean("RanBefore", true);
+            editor.putBoolean("is_first", false);
             editor.commit();
         }
-        return !ranBefore;
+        Log.d("Login after"," "+!ranBefore+" "+ranBefore);
+        return ranBefore;
     }
 
     public void onLoginClick()
@@ -267,9 +301,6 @@ public class LoginActivity extends Activity {
             password = edtPassword.getText().toString();
           //  final  ParseUser user = new ParseUser();
 
-            ParseUser parseUser = new ParseUser();
-
-
             if (email.equals("")) {
                 alert.showAlertDialog(LoginActivity.this, getResources().getString(R.string.enter_login_username));
 
@@ -278,12 +309,11 @@ public class LoginActivity extends Activity {
 
             }
           else {
-                new AsyncTask<Void, Void, Void>() {
-
+                    new AsyncTask<Void, Void, Void>() {
                     @Override
                     protected void onPreExecute() {
                         super.onPreExecute();
-                        Utils.setProgress(LoginActivity.this,true);
+                     //   Utils.setProgress(LoginActivity.this,true);
                     }
 
                     @Override
@@ -303,18 +333,6 @@ public class LoginActivity extends Activity {
                                                 // edtPassword.setText("");
 
                                                 if (getIntent().getExtras() != null) {
-                                                   /*String  bath_desc = getIntent().getStringExtra("BathDescription");
-                                                   String bath_type = getIntent().getStringExtra("BathType");
-                                                   float bath_rate = getIntent().getFloatExtra("BathRating",0.0f);
-
-                                                   Log.d("LoginActivity","get intent"+bath_desc+" "+bath_type+" "+bath_rate);
-
-                                                   Log.d("LoginActivity", "  " + (getIntent().getExtras() != null));
-                                                   Intent intent1=new Intent();
-                                                   intent1.putExtra("BathDescription", bath_desc);
-                                                   intent1.putExtra("BathType",bath_type);
-                                                   intent1.putExtra("BathRating",bath_rate);
-                                                   setResult(101, intent1);*/
                                                     finish();
                                                 } else {
                                                     Intent in = new Intent(getApplicationContext(), SearchLocationActivity.class);
@@ -331,7 +349,7 @@ public class LoginActivity extends Activity {
                                             // Signup failed. Look at the ParseException to see what happened.
                                             Log.e("Errorr", e.toString());
                                             alert.showAlertDialog(LoginActivity.this, getResources().getString(R.string.login_invalid));
-                                        }
+                                          }
                                     }
                                 }
 
@@ -342,17 +360,12 @@ public class LoginActivity extends Activity {
                     @Override
                     protected void onPostExecute(Void aVoid) {
                         super.onPostExecute(aVoid);
-                     Utils.setProgress(LoginActivity.this,false);
+                        Log.d("LoginActivity"," on post execute");
                     }
                 }.execute();
+            //    Utils.setProgress(LoginActivity.this, false);
 
-
-
-                }
-
-
-
-     //   }
+            }
     }
 
 

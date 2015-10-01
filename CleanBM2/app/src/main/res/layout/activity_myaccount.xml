@@ -39,8 +39,19 @@
             android:layout_height="wrap_content"
             android:layout_gravity="center_horizontal"
             android:layout_marginBottom="5dp"
-            android:text="Basic Profile"
+            android:text="You have the Basic Plan"
             android:textAppearance="@android:style/TextAppearance.Large" />
+
+        <TextView
+            android:id="@+id/txtUpgradeAccount"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:clickable="true"
+            android:textSize="18sp"
+            android:gravity="center_vertical|center"
+            android:paddingBottom="5sp"
+            android:textColor="@color/wallet_link_text_light"
+            android:text="@string/UpgradeAccount" />
 
         <TextView
             android:id="@+id/textView2"
@@ -55,7 +66,10 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:layout_gravity="center_horizontal"
-        android:layout_margin="20dp"
+        android:layout_marginLeft="20dp"
+        android:layout_marginRight="20dp"
+        android:layout_marginBottom="20dp"
+        android:layout_marginTop="5dp"
         android:fadingEdge="none"
         android:fillViewport="true"
         android:overScrollMode="never"
@@ -184,16 +198,6 @@
                     android:textAllCaps="false"
                     android:text="@string/save_changes" />
 
-                <TextView
-                    android:id="@+id/txtUpgradeAccount"
-                    style="@style/button_txtstyle"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:background="@drawable/login_box"
-                    android:clickable="true"
-                    android:gravity="center_vertical|center"
-                    android:paddingBottom="5sp"
-                    android:text="@string/UpgradeAccount" />
 
             </LinearLayout>
 
