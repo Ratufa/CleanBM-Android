@@ -601,15 +601,6 @@ public class DashBoardActivity extends FragmentActivity  //implements TouchableW
         mMap.getUiSettings().setMyLocationButtonEnabled(true);
         CameraPosition cameraPosition = new CameraPosition.Builder().target(new LatLng(latitude, longitude)).zoom(zoomLevel).build();
         mMap.animateCamera(CameraUpdateFactory.newCameraPosition(cameraPosition));
-        mMap.setOnCameraChangeListener(new GoogleMap.OnCameraChangeListener() {
-            @Override
-            public void onCameraChange(CameraPosition cameraPosition) {
-                latLng = mMap.getCameraPosition().target;
-                double lat = latLng.latitude;
-                double lng = latLng.longitude;
-                Log.d(TAG," "+lat+" "+lng);
-            }
-        });
 
     }
 
